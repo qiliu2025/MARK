@@ -1,0 +1,82 @@
+MARK Noncommercial Research License
+Version 1.0
+
+Copyright (c) 2026 MARK copyright holders. All rights reserved except as
+expressly granted below.
+
+1. Scope
+
+This license applies to the original MARK application code, documentation,
+and resources supplied under this license (the "MARK Materials"). It does
+not replace the licenses of third-party software, reference data, or other
+independent components. The knowledge bases distributed in knowledge-base/
+are governed separately by KNOWLEDGE_BASE_LICENSE.md.
+
+2. Noncommercial scientific research permission
+
+Subject to these terms, you may use, copy, inspect, modify, and compile the
+MARK Materials solely for noncommercial scientific research. You may share
+original or modified MARK Materials with other recipients solely for that
+same purpose, under this license and without charging for the materials.
+
+Public or charitable research grants, researchers' normal salaries, and
+academic publication do not by themselves make research commercial.
+
+3. Commercial and other uses
+
+Commercial use requires prior written permission from the MARK copyright
+holders. Commercial use includes selling or licensing MARK or a derivative;
+providing paid processing, consulting, or hosted services using it; and
+using it to develop, validate, operate, or support commercial products or
+services, including internal business research and development. Research
+performed for a commercial customer or to provide a commercial deliverable
+also requires written permission. An institution's nonprofit or academic
+status does not exempt its commercial activities.
+
+Uses outside noncommercial scientific research are not granted by this
+license and require separate written permission. Contact the maintainers
+through the official MARK repository to request such permission.
+
+4. Conditions for copying, modification, and sharing
+
+Retain this license, applicable copyright notices, and third-party notices
+with every copy. Identify modified versions and record the changes and
+their dates. Do not represent a modified version as an official MARK
+release or imply endorsement by its authors.
+
+When sharing a modified executable, also provide its corresponding MARK
+source code and the build scripts needed to reproduce that executable,
+under this license. You may not remove these conditions, grant commercial
+rights you do not hold, or impose terms that conflict with this license.
+
+5. Third-party components and data
+
+Third-party components retain their original licenses and rights, including
+any rights those licenses grant for commercial use. This license imposes
+no additional restrictions on those independent components. Observe their
+license, source-distribution, attribution, and other applicable obligations.
+See THIRD_PARTY_NOTICES.md and the notices supplied with each component.
+
+Rights in original GNSS data and factual information remain with their
+respective holders or arise under applicable law. This license does not
+claim ownership of, or restrict independently granted rights in, that data.
+No trademark or endorsement rights are granted.
+
+6. Termination
+
+The permissions in this license terminate if you breach its conditions.
+Other rights and permissions validly obtained under another applicable
+license are not revoked by these terms.
+
+7. No warranty and limitation of liability
+
+THE MARK MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, AND NONINFRINGEMENT. TO THE EXTENT PERMITTED BY APPLICABLE LAW,
+THE COPYRIGHT HOLDERS AND CONTRIBUTORS ARE NOT LIABLE FOR CLAIMS, DAMAGES,
+OR OTHER LIABILITY ARISING FROM USE OF THE MARK MATERIALS.
+
+8. License classification
+
+Source is made available subject to the research-use restrictions above.
+This is a source-available license, not an unrestricted open-source license.

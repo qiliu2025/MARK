@@ -1,0 +1,79 @@
+/* Workbench geometry; ui.css defines colours. */
+.topbar { height:44px; gap:16px; padding:0 12px; }
+html .brand-mark,html .brand-mark .mark-app-icon { width:34px; height:34px; }
+html .brand-mark { flex-basis:34px; }
+html .brand-copy b { font-size:22px; line-height:22px; }
+html .brand-copy em { line-height:10px; }
+html .topbar .mark-top-action { width:32px; height:32px; flex-basis:32px; }
+.topbar .settings-trigger { flex:0 0 32px; }
+.index-state { padding:4px 10px; }
+.mode-tab { height:32px; }
+
+.main-stage {
+  height:calc(100vh - 44px);
+  padding:5px 8px 6px;
+  grid-template-rows:minmax(0,1fr) 54px;
+  gap:4px;
+}
+.observation-workspace {
+  grid-template-columns:762px minmax(0,1fr);
+  grid-template-rows:648px minmax(0,1fr);
+  gap:4px;
+}
+.observation-page,#observationPage,
+.precise-workspace,.precise-results-grid,.precise-side-stack { gap:4px; }
+.map-viewport { margin-left:8px; margin-right:8px; }
+.country-shape.sovereignty-indicator { fill:none; stroke-width:.65; }
+.country-shape.disputed-area { stroke:none; }
+.disputed-boundary-halo { fill:none; stroke:#d9e5eb; stroke-width:2.5; vector-effect:non-scaling-stroke; }
+.disputed-boundary { fill:none; stroke:#8fa6b6; stroke-width:.9; stroke-dasharray:4 3; vector-effect:non-scaling-stroke; }
+html[data-theme="dark"] .disputed-boundary-halo { stroke:#1d2a38; }
+html[data-theme="dark"] .disputed-boundary { stroke:#7890a7; }
+
+/* Physical land and reference border lines are separate offline layers. */
+.map-reference-land { fill:var(--mark-land,#d9e5eb); fill-rule:evenodd; stroke:none; }
+.map-reference-coast { fill:none; stroke:var(--mark-boundary,#8fa6b6); stroke-width:.55; vector-effect:non-scaling-stroke; }
+.map-reference-border { fill:none; stroke:var(--mark-boundary,#8fa6b6); stroke-width:.7; vector-effect:non-scaling-stroke; }
+.map-reference-border.undetermined { stroke-dasharray:1.5 2.5; stroke-linecap:round; }
+.map-reference-border.control { stroke-dasharray:4 2 1 2; stroke-linecap:round; }
+html[data-theme="dark"] .map-reference-land { fill:var(--mark-land,#1d2a38); }
+html[data-theme="dark"] .map-reference-coast,
+html[data-theme="dark"] .map-reference-border { stroke:var(--mark-boundary,#7890a7); }
+.map-source-info { cursor:help; text-decoration:underline dotted; text-underline-offset:2px; }
+.map-source-info:focus-visible { outline:1px solid var(--blue); outline-offset:2px; }
+
+.download-dock {
+  grid-template-columns:180px minmax(250px,1fr) minmax(250px,.85fr) auto;
+  gap:8px;
+  padding:5px 8px;
+}
+.download-icon { flex:0 0 32px; width:32px; height:32px; border-radius:10px; }
+.download-brand h1 { font-size:14px; line-height:18px; }
+.download-brand p { font-size:11px; line-height:14px; }
+.folder-block { gap:6px; }
+.progress-meta { margin-bottom:4px; }
+.progress-track { height:6px; }
+
+@media(min-width:1601px) {
+  html:not(:lang(en)) .selection-field { gap:4px; }
+  html:not(:lang(en)) .selection-field > input { width:58px; }
+  html:not(:lang(en)) .selection-field > #selectionCount { width:64px; }
+}
+@media(max-width:1600px) {
+  .observation-workspace {
+    grid-template-columns:minmax(0,.86fr) minmax(0,1fr);
+    grid-template-rows:454px minmax(0,1fr);
+  }
+}
+@media(max-width:1240px) {
+  .observation-workspace { grid-template-columns:minmax(360px,.85fr) minmax(0,1.15fr); }
+  .download-dock { grid-template-columns:172px minmax(230px,1fr) minmax(210px,.65fr) auto; }
+}
+@media(max-height:850px) {
+  .observation-workspace { grid-template-rows:minmax(444px,1.35fr) minmax(170px,.65fr); }
+  .query-card:has(.single-page-query) { grid-template-rows:minmax(0,1fr) minmax(260px,1fr); }
+}
+@media(max-height:700px) {
+  .observation-workspace { grid-template-rows:minmax(384px,1.35fr) minmax(145px,.65fr); }
+  .query-card:has(.single-page-query) { grid-template-rows:minmax(0,1fr) minmax(220px,1fr); }
+}

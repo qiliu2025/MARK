@@ -1,0 +1,796 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Resolve only the audited 2026-09-30 station coordinates still reported as UNK; do not infer locations for coordinate-free records.",
+  "observationPeriod": [
+    "1990-01-01",
+    "2026-09-30"
+  ],
+  "polygonSource": "Natural Earth admin-0 countries 1:10m, public domain",
+  "polygonFile": "map-sources/natural-earth-countries-10m.original.geojson",
+  "polygonSha256": "239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255",
+  "nearestCoastMaxKm": 3,
+  "rejected": [
+    {
+      "id": "CAMI",
+      "reason": "no reliable land polygon nearby"
+    }
+  ],
+  "stations": [
+    {
+      "id": "0KOB",
+      "latitude": 60.409636,
+      "longitude": 18.230195,
+      "area": "SWE",
+      "method": "nearest-natural-earth-10m-coast",
+      "distanceToLandKm": 2.25
+    },
+    {
+      "id": "8MAR",
+      "latitude": 60.595027,
+      "longitude": 17.258649,
+      "area": "SWE",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "ADE3",
+      "latitude": -34.728379,
+      "longitude": 138.647523,
+      "area": "AUS",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "ADE4",
+      "latitude": -34.728379,
+      "longitude": 138.647523,
+      "area": "AUS",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "AXIS",
+      "latitude": 47.4042,
+      "longitude": -120.2848,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "BAIB",
+      "latitude": 52.575598,
+      "longitude": -131.753501,
+      "area": "CAN",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "BAYV",
+      "latitude": 48.002,
+      "longitude": -122.4578,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "BCIT",
+      "latitude": 47.614,
+      "longitude": -122.191,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "BCNS",
+      "latitude": 48.648493,
+      "longitude": -123.450976,
+      "area": "CAN",
+      "method": "nearest-natural-earth-10m-coast",
+      "distanceToLandKm": 0.3
+    },
+    {
+      "id": "BELV",
+      "latitude": 47.598516,
+      "longitude": -122.182701,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "BFIR",
+      "latitude": 47.6174,
+      "longitude": -122.1254,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "BLVU",
+      "latitude": 47.5991,
+      "longitude": -122.1831,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "BPKT",
+      "latitude": 46.8831,
+      "longitude": -120.3274,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "BSUM",
+      "latitude": 47.554,
+      "longitude": -122.1319,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "CAMI",
+      "latitude": 48.2153,
+      "longitude": -122.4786,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "CH2M",
+      "latitude": 47.5266,
+      "longitude": -121.8261,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "CPUD",
+      "latitude": 47.4301,
+      "longitude": -120.3142,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "CSTL",
+      "latitude": 49.2581,
+      "longitude": -117.6573,
+      "area": "CAN",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "DEA1",
+      "latitude": 47.6657,
+      "longitude": -117.4205,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "DEA2",
+      "latitude": 48.7527,
+      "longitude": -122.48,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "DEA3",
+      "latitude": 45.5069,
+      "longitude": -122.6727,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "DS40",
+      "latitude": -35.401114,
+      "longitude": 148.981783,
+      "area": "AUS",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "DS41",
+      "latitude": -35.401085,
+      "longitude": 148.981561,
+      "area": "AUS",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "EPHM",
+      "latitude": 32.868462,
+      "longitude": -117.252314,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "ESM1",
+      "latitude": 47.8034,
+      "longitude": -122.5691,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "FRFX",
+      "latitude": 47.0079,
+      "longitude": -121.9594,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "FRID",
+      "latitude": 48.5352,
+      "longitude": -123.018,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "GLNW",
+      "latitude": 46.019874,
+      "longitude": -121.288729,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "GRP4",
+      "latitude": 48.1946,
+      "longitude": -122.1272,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "HGP1",
+      "latitude": 47.0193,
+      "longitude": -122.921,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "HTCH",
+      "latitude": 47.1915,
+      "longitude": -120.9657,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "INW1",
+      "latitude": 47.7144,
+      "longitude": -116.9297,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "INW2",
+      "latitude": 48.1879,
+      "longitude": -117.0298,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "IWAC",
+      "latitude": 46.3058,
+      "longitude": -124.0394,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "JEDY",
+      "latitude": 52.293224,
+      "longitude": -131.197579,
+      "area": "CAN",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "KAHL",
+      "latitude": 46.641,
+      "longitude": -118.5573,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "KANA",
+      "latitude": 48.9555,
+      "longitude": -119.436,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "KNTP",
+      "latitude": 47.4251,
+      "longitude": -122.2575,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "KRMT",
+      "latitude": 47.8028,
+      "longitude": -122.3209,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "LBSE",
+      "latitude": 32.881122,
+      "longitude": -117.237508,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "LBSW",
+      "latitude": 32.881121,
+      "longitude": -117.237648,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "LNGB",
+      "latitude": 47.2187,
+      "longitude": -122.7582,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "MAJB",
+      "latitude": 7.119149,
+      "longitude": 171.36452,
+      "area": "MHL",
+      "method": "nearest-natural-earth-10m-coast",
+      "distanceToLandKm": 1.63
+    },
+    {
+      "id": "MCMV",
+      "latitude": 45.1973,
+      "longitude": -123.1331,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "MSLK",
+      "latitude": 47.1306,
+      "longitude": -119.2737,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "NWIS",
+      "latitude": 48.4191,
+      "longitude": -122.6702,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "NWPT",
+      "latitude": 48.1776,
+      "longitude": -117.048,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "OB3C",
+      "latitude": 44.065961,
+      "longitude": -123.098133,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "OTHL",
+      "latitude": 46.8225,
+      "longitude": -119.1678,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "OTIS",
+      "latitude": 48.4178,
+      "longitude": -122.3365,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "OYLR",
+      "latitude": 47.4746,
+      "longitude": -122.2047,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "PDXB",
+      "latitude": 45.5664,
+      "longitude": -122.5815,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "PER1",
+      "latitude": 47.9816,
+      "longitude": -122.2081,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "PNCL",
+      "latitude": 48.1014,
+      "longitude": -123.4152,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "PNDL",
+      "latitude": 45.6695,
+      "longitude": -118.7915,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "POUL",
+      "latitude": 47.7546,
+      "longitude": -122.6672,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "PSEA",
+      "latitude": 47.4513,
+      "longitude": -122.3201,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "PTWA",
+      "latitude": 49.006081,
+      "longitude": -123.082463,
+      "area": "CAN",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "RCM2",
+      "latitude": 25.613354,
+      "longitude": -80.384114,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "RCM4",
+      "latitude": 25.615039,
+      "longitude": -80.384746,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "RCMV",
+      "latitude": 25.614098,
+      "longitude": -80.384067,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "RICH",
+      "latitude": 46.2772,
+      "longitude": -119.2774,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "RMDB",
+      "latitude": 44.259767,
+      "longitude": -121.147883,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SATS",
+      "latitude": 46.9654,
+      "longitude": -123.5402,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SCHE",
+      "latitude": 54.804866,
+      "longitude": -66.809419,
+      "area": "CAN",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SEDK",
+      "latitude": 48.5041,
+      "longitude": -122.2389,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SHN1",
+      "latitude": 40.791856,
+      "longitude": -124.1799,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SKMA",
+      "latitude": 45.6942,
+      "longitude": -121.8839,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SPKV",
+      "latitude": 47.6774,
+      "longitude": -117.2715,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SQIM",
+      "latitude": 48.0823,
+      "longitude": -123.102,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "STI1",
+      "latitude": -32.212403,
+      "longitude": 115.684344,
+      "area": "AUS",
+      "method": "nearest-natural-earth-10m-coast",
+      "distanceToLandKm": 0.66
+    },
+    {
+      "id": "STI2",
+      "latitude": -32.212403,
+      "longitude": 115.684344,
+      "area": "AUS",
+      "method": "nearest-natural-earth-10m-coast",
+      "distanceToLandKm": 0.66
+    },
+    {
+      "id": "STRL",
+      "latitude": 38.977218,
+      "longitude": -77.483628,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SVIC",
+      "latitude": 43.643063,
+      "longitude": -121.253277,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "SW02",
+      "latitude": -35.342562,
+      "longitude": 149.161006,
+      "area": "AUS",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "TAY1",
+      "latitude": 46.7146,
+      "longitude": -117.1762,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "TIXG",
+      "latitude": 71.634473,
+      "longitude": 128.866423,
+      "area": "RUS",
+      "method": "nearest-natural-earth-10m-coast",
+      "distanceToLandKm": 2.25
+    },
+    {
+      "id": "TMAR",
+      "latitude": 31.151863,
+      "longitude": 35.365049,
+      "area": "ISR",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "TOWN",
+      "latitude": -19.259818,
+      "longitude": 146.814119,
+      "area": "AUS",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "TRI1",
+      "latitude": 47.7087,
+      "longitude": -122.1874,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "V081",
+      "latitude": 47.604099,
+      "longitude": -122.338501,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "V096",
+      "latitude": 47.601349,
+      "longitude": -122.335991,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "V102",
+      "latitude": 47.60054,
+      "longitude": -122.33551,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "VERN",
+      "latitude": 48.4178,
+      "longitude": -122.3371,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WABR",
+      "latitude": 48.100445,
+      "longitude": -119.779927,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WACS",
+      "latitude": 46.675442,
+      "longitude": -122.969567,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WAEV",
+      "latitude": 47.981554,
+      "longitude": -122.20772,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WAKI",
+      "latitude": 47.708751,
+      "longitude": -122.187472,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WAOY",
+      "latitude": 47.0479,
+      "longitude": -122.8389,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WAPO",
+      "latitude": 47.803477,
+      "longitude": -122.569155,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WAPS",
+      "latitude": 47.451198,
+      "longitude": -122.320806,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WASQ",
+      "latitude": 47.526647,
+      "longitude": -121.826153,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WCM1",
+      "latitude": 47.5411,
+      "longitude": -122.6359,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WEEZ",
+      "latitude": 47.9768,
+      "longitude": -122.2047,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WLPS",
+      "latitude": 37.936879,
+      "longitude": -75.469883,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "WNTH",
+      "latitude": 48.4632,
+      "longitude": -120.1729,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    },
+    {
+      "id": "YAWA",
+      "latitude": 46.6049,
+      "longitude": -120.505,
+      "area": "USA",
+      "method": "inside-natural-earth-10m",
+      "distanceToLandKm": 0.0
+    }
+  ]
+}

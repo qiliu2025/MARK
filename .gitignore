@@ -1,0 +1,42 @@
+# Generated output is rooted here. Do not ignore nested SDK build folders.
+/build/
+/build-private/
+/out/
+/release/
+/dist/
+/software/
+/knowledge-base/
+/runtime-data/
+/tmp/
+/.vs/
+/.idea/
+/.vscode/
+
+# Private configuration and credentials.
+/.env
+/.env.*
+/settings.ini
+/network.ini
+/ui_state.ini
+/private/
+/*.key
+/*.pem
+/*.pfx
+/*.p12
+*.duckdb
+*.duckdb.wal
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+
+# Python cache and editor/OS files.
+__pycache__/
+*.py[cod]
+*.tmp
+*.bak
+~$*
+.DS_Store
+Thumbs.db
+
+# Third-party .exe/.dll/.lib files are build/runtime dependencies and are kept.

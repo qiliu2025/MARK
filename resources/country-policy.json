@@ -1,0 +1,819 @@
+{
+  "schemaVersion": 1,
+  "worldview": "PRC",
+  "ownFlagAreas": ["BES", "PYF", "ATF", "GRL", "GUM", "MTQ", "NCL", "VIR", "ATA", "FLK"],
+  "selectableRegionAreas": ["BES", "PYF", "ATF", "GRL", "GUM", "MTQ", "NCL", "VIR", "ATA"],
+  "areas": {
+    "TWN": {
+      "country": "CHN",
+      "zh": "台湾",
+      "en": "Taiwan",
+      "kind": "region"
+    },
+    "HKG": {
+      "country": "CHN",
+      "zh": "香港",
+      "en": "Hong Kong",
+      "kind": "region"
+    },
+    "MAC": {
+      "country": "CHN",
+      "zh": "澳门",
+      "en": "Macao",
+      "kind": "region"
+    },
+    "GRL": {
+      "country": "DNK",
+      "zh": "格陵兰",
+      "en": "Greenland",
+      "kind": "region"
+    },
+    "FRO": {
+      "country": "DNK",
+      "zh": "法罗群岛",
+      "en": "Faroe Islands",
+      "kind": "region"
+    },
+    "GUF": {
+      "country": "FRA",
+      "zh": "法属圭亚那",
+      "en": "French Guiana",
+      "kind": "region"
+    },
+    "GLP": {
+      "country": "FRA",
+      "zh": "瓜德罗普",
+      "en": "Guadeloupe",
+      "kind": "region"
+    },
+    "MTQ": {
+      "country": "FRA",
+      "zh": "马提尼克",
+      "en": "Martinique",
+      "kind": "region"
+    },
+    "REU": {
+      "country": "FRA",
+      "zh": "留尼汪",
+      "en": "Reunion",
+      "kind": "region"
+    },
+    "MYT": {
+      "country": "COM",
+      "zh": "马约特",
+      "en": "Mayotte",
+      "kind": "region"
+    },
+    "SPM": {
+      "country": "FRA",
+      "zh": "圣皮埃尔和密克隆",
+      "en": "Saint Pierre and Miquelon",
+      "kind": "region"
+    },
+    "MAF": {
+      "country": "FRA",
+      "zh": "法属圣马丁",
+      "en": "Saint Martin",
+      "kind": "region"
+    },
+    "BLM": {
+      "country": "FRA",
+      "zh": "圣巴泰勒米",
+      "en": "Saint Barthelemy",
+      "kind": "region"
+    },
+    "PYF": {
+      "country": "FRA",
+      "zh": "法属波利尼西亚",
+      "en": "French Polynesia",
+      "kind": "region"
+    },
+    "NCL": {
+      "country": "FRA",
+      "zh": "新喀里多尼亚",
+      "en": "New Caledonia",
+      "kind": "region"
+    },
+    "WLF": {
+      "country": "FRA",
+      "zh": "瓦利斯和富图纳",
+      "en": "Wallis and Futuna",
+      "kind": "region"
+    },
+    "ATF": {
+      "country": "FRA",
+      "zh": "法属南部领地",
+      "en": "French Southern Territories",
+      "kind": "region"
+    },
+    "ABW": {
+      "country": "NLD",
+      "zh": "阿鲁巴",
+      "en": "Aruba",
+      "kind": "region"
+    },
+    "CUW": {
+      "country": "NLD",
+      "zh": "库拉索",
+      "en": "Curacao",
+      "kind": "region"
+    },
+    "SXM": {
+      "country": "NLD",
+      "zh": "荷属圣马丁",
+      "en": "Sint Maarten",
+      "kind": "region"
+    },
+    "BES": {
+      "country": "NLD",
+      "zh": "荷兰加勒比区",
+      "en": "Caribbean Netherlands",
+      "kind": "region"
+    },
+    "PRI": {
+      "country": "USA",
+      "zh": "波多黎各",
+      "en": "Puerto Rico",
+      "kind": "region"
+    },
+    "GUM": {
+      "country": "USA",
+      "zh": "关岛",
+      "en": "Guam",
+      "kind": "region"
+    },
+    "ASM": {
+      "country": "USA",
+      "zh": "美属萨摩亚",
+      "en": "American Samoa",
+      "kind": "region"
+    },
+    "VIR": {
+      "country": "USA",
+      "zh": "美属维尔京群岛",
+      "en": "US Virgin Islands",
+      "kind": "region"
+    },
+    "MNP": {
+      "country": "USA",
+      "zh": "北马里亚纳群岛",
+      "en": "Northern Mariana Islands",
+      "kind": "region"
+    },
+    "UMI": {
+      "country": "USA",
+      "zh": "美国本土外小岛屿",
+      "en": "US Minor Outlying Islands",
+      "kind": "region"
+    },
+    "BMU": {
+      "country": "GBR",
+      "zh": "百慕大",
+      "en": "Bermuda",
+      "kind": "region"
+    },
+    "AIA": {
+      "country": "GBR",
+      "zh": "安圭拉",
+      "en": "Anguilla",
+      "kind": "region"
+    },
+    "VGB": {
+      "country": "GBR",
+      "zh": "英属维尔京群岛",
+      "en": "British Virgin Islands",
+      "kind": "region"
+    },
+    "CYM": {
+      "country": "GBR",
+      "zh": "开曼群岛",
+      "en": "Cayman Islands",
+      "kind": "region"
+    },
+    "MSR": {
+      "country": "GBR",
+      "zh": "蒙特塞拉特",
+      "en": "Montserrat",
+      "kind": "region"
+    },
+    "TCA": {
+      "country": "GBR",
+      "zh": "特克斯和凯科斯群岛",
+      "en": "Turks and Caicos Islands",
+      "kind": "region"
+    },
+    "SHN": {
+      "country": "GBR",
+      "zh": "圣赫勒拿",
+      "en": "Saint Helena",
+      "kind": "region"
+    },
+    "PCN": {
+      "country": "GBR",
+      "zh": "皮特凯恩群岛",
+      "en": "Pitcairn Islands",
+      "kind": "region"
+    },
+    "GGY": {
+      "country": "GBR",
+      "zh": "根西（英国王室属地）",
+      "en": "Guernsey (British Crown dependency)",
+      "kind": "region"
+    },
+    "JEY": {
+      "country": "GBR",
+      "zh": "泽西（英国王室属地）",
+      "en": "Jersey (British Crown dependency)",
+      "kind": "region"
+    },
+    "IMN": {
+      "country": "GBR",
+      "zh": "马恩岛（英国王室属地）",
+      "en": "Isle of Man (British Crown dependency)",
+      "kind": "region"
+    },
+    "GIB": {
+      "country": "GBR",
+      "zh": "直布罗陀",
+      "en": "Gibraltar",
+      "kind": "region"
+    },
+    "ALA": {
+      "country": "FIN",
+      "zh": "奥兰群岛",
+      "en": "Aland Islands",
+      "kind": "region"
+    },
+    "SJM": {
+      "country": "NOR",
+      "zh": "斯瓦尔巴和扬马延",
+      "en": "Svalbard and Jan Mayen",
+      "kind": "region"
+    },
+    "BVT": {
+      "country": "NOR",
+      "zh": "布韦岛",
+      "en": "Bouvet Island",
+      "kind": "region"
+    },
+    "NFK": {
+      "country": "AUS",
+      "zh": "诺福克岛",
+      "en": "Norfolk Island",
+      "kind": "region"
+    },
+    "HMD": {
+      "country": "AUS",
+      "zh": "赫德岛和麦克唐纳群岛",
+      "en": "Heard and McDonald Islands",
+      "kind": "region"
+    },
+    "CXR": {
+      "country": "AUS",
+      "zh": "圣诞岛",
+      "en": "Christmas Island",
+      "kind": "region"
+    },
+    "CCK": {
+      "country": "AUS",
+      "zh": "科科斯群岛",
+      "en": "Cocos Islands",
+      "kind": "region"
+    },
+    "IOA": {
+      "country": "AUS",
+      "zh": "澳属印度洋领地",
+      "en": "Australian Indian Ocean Territories",
+      "kind": "region"
+    },
+    "ATC": {
+      "country": "AUS",
+      "zh": "阿什莫尔和卡捷群岛",
+      "en": "Ashmore and Cartier Islands",
+      "kind": "region"
+    },
+    "TKL": {
+      "country": "NZL",
+      "zh": "托克劳",
+      "en": "Tokelau",
+      "kind": "region"
+    },
+    "XKK": {
+      "country": "SRB",
+      "zh": "科索沃",
+      "en": "Kosovo",
+      "kind": "region"
+    },
+    "SOL": {
+      "country": "SOM",
+      "zh": "索马里兰",
+      "en": "Somaliland",
+      "kind": "region"
+    },
+    "CYN": {
+      "country": "CYP",
+      "zh": "北塞浦路斯",
+      "en": "Northern Cyprus",
+      "kind": "region"
+    },
+    "FLK": {
+      "country": "ARG",
+      "zh": "马尔维纳斯群岛",
+      "en": "Malvinas Islands",
+      "kind": "region"
+    },
+    "ESH": {
+      "country": null,
+      "zh": "西撒哈拉",
+      "en": "Western Sahara",
+      "kind": "disputed"
+    },
+    "SGS": {
+      "country": null,
+      "zh": "南乔治亚和南桑威奇群岛",
+      "en": "South Georgia and the South Sandwich Islands",
+      "kind": "disputed"
+    },
+    "IOT": {
+      "country": "MUS",
+      "zh": "查戈斯群岛",
+      "en": "Chagos Archipelago",
+      "kind": "region"
+    },
+    "ATA": {
+      "country": null,
+      "zh": "南极洲",
+      "en": "Antarctica",
+      "kind": "nonstate"
+    },
+    "KAS": {
+      "country": "KMR",
+      "zh": "锡亚琴冰川",
+      "en": "Siachen Glacier",
+      "kind": "region"
+    },
+    "CRM": {
+      "country": "UKR",
+      "zh": "克里米亚",
+      "en": "Crimea",
+      "kind": "region"
+    },
+    "GLN": {
+      "country": "SYR",
+      "zh": "戈兰高地",
+      "en": "Golan Heights",
+      "kind": "region"
+    },
+    "ABK": {
+      "country": "GEO",
+      "zh": "阿布哈兹",
+      "en": "Abkhazia",
+      "kind": "region"
+    },
+    "OSA": {
+      "country": "GEO",
+      "zh": "南奥塞梯",
+      "en": "South Ossetia",
+      "kind": "region"
+    },
+    "TRN": {
+      "country": "MDA",
+      "zh": "德涅斯特河沿岸",
+      "en": "Transnistria",
+      "kind": "region"
+    },
+    "NKR": {
+      "country": "AZE",
+      "zh": "纳戈尔诺-卡拉巴赫",
+      "en": "Nagorno-Karabakh",
+      "kind": "region"
+    },
+    "DNT": {
+      "country": "UKR",
+      "zh": "顿涅茨克",
+      "en": "Donetsk",
+      "kind": "region"
+    },
+    "LHN": {
+      "country": "UKR",
+      "zh": "卢甘斯克",
+      "en": "Luhansk",
+      "kind": "region"
+    },
+    "KMR": {
+      "country": null,
+      "zh": "克什米尔",
+      "en": "Kashmir",
+      "kind": "disputed",
+      "status": "地位未定"
+    },
+    "STB": {
+      "country": "CHN",
+      "zh": "藏南",
+      "en": "Southern Tibet",
+      "kind": "region"
+    },
+    "AKC": {
+      "country": "CHN",
+      "zh": "阿克赛钦",
+      "en": "Aksai Chin",
+      "kind": "region"
+    },
+    "DYA": {
+      "country": "CHN",
+      "zh": "钓鱼岛及其附属岛屿",
+      "en": "Diaoyu Dao and its affiliated islands",
+      "kind": "region"
+    }
+  },
+  "aliases": {
+    "KOS": "XKK",
+    "XKX": "XKK",
+    "KOSOVO": "XKK",
+    "SOMALILAND": "SOL",
+    "NORTHERN CYPRUS": "CYN",
+    "ALD": "ALA",
+    "PSX": "PSE",
+    "PAL": "PSE",
+    "中国香港": "HKG",
+    "香港": "HKG",
+    "中国澳门": "MAC",
+    "澳门": "MAC",
+    "澳門": "MAC",
+    "格陵兰": "GRL",
+    "格陵蘭": "GRL",
+    "法罗群岛": "FRO",
+    "丹麦": "DNK",
+    "丹麥": "DNK",
+    "HONG KONG S.A.R.": "HKG",
+    "MACAO S.A.R": "MAC",
+    "MACAU": "MAC",
+    "MACAO": "MAC",
+    "台湾": "TWN",
+    "法属圭亚那": "GUF",
+    "瓜德罗普": "GLP",
+    "马提尼克": "MTQ",
+    "留尼汪": "REU",
+    "马约特": "MYT",
+    "圣皮埃尔和密克隆": "SPM",
+    "法属圣马丁": "MAF",
+    "圣巴泰勒米": "BLM",
+    "法属波利尼西亚": "PYF",
+    "新喀里多尼亚": "NCL",
+    "瓦利斯和富图纳": "WLF",
+    "法属南部领地": "ATF",
+    "阿鲁巴": "ABW",
+    "库拉索": "CUW",
+    "荷属圣马丁": "SXM",
+    "荷兰加勒比区": "BES",
+    "波多黎各": "PRI",
+    "关岛": "GUM",
+    "美属萨摩亚": "ASM",
+    "美属维尔京群岛": "VIR",
+    "北马里亚纳群岛": "MNP",
+    "美国本土外小岛屿": "UMI",
+    "百慕大": "BMU",
+    "安圭拉": "AIA",
+    "英属维尔京群岛": "VGB",
+    "开曼群岛": "CYM",
+    "蒙特塞拉特": "MSR",
+    "特克斯和凯科斯群岛": "TCA",
+    "圣赫勒拿": "SHN",
+    "皮特凯恩群岛": "PCN",
+    "根西（英国王室属地）": "GGY",
+    "泽西（英国王室属地）": "JEY",
+    "马恩岛（英国王室属地）": "IMN",
+    "直布罗陀": "GIB",
+    "奥兰群岛": "ALA",
+    "斯瓦尔巴和扬马延": "SJM",
+    "布韦岛": "BVT",
+    "诺福克岛": "NFK",
+    "赫德岛和麦克唐纳群岛": "HMD",
+    "圣诞岛": "CXR",
+    "科科斯群岛": "CCK",
+    "澳属印度洋领地": "IOA",
+    "阿什莫尔和卡捷群岛": "ATC",
+    "托克劳": "TKL",
+    "科索沃": "XKK",
+    "索马里兰": "SOL",
+    "北塞浦路斯": "CYN",
+    "马尔维纳斯群岛": "FLK",
+    "西撒哈拉": "ESH",
+    "南乔治亚和南桑威奇群岛": "SGS",
+    "查戈斯群岛": "IOT",
+    "南极洲": "ATA",
+    "锡亚琴冰川": "KAS",
+    "克里米亚": "CRM",
+    "CRIMEA": "CRM",
+    "戈兰高地": "GLN",
+    "GOLAN HEIGHTS": "GLN",
+    "阿布哈兹": "ABK",
+    "ABKHAZIA": "ABK",
+    "南奥塞梯": "OSA",
+    "SOUTH OSSETIA": "OSA",
+    "德涅斯特河沿岸": "TRN",
+    "TRANSNISTRIA": "TRN",
+    "纳戈尔诺-卡拉巴赫": "NKR",
+    "NAGORNO-KARABAKH": "NKR",
+    "顿涅茨克": "DNT",
+    "DONETSK": "DNT",
+    "卢甘斯克": "LHN",
+    "LUHANSK": "LHN",
+    "CRIMEA, RUSSIA": "CRM",
+    "CRIMEA, UKRAINE": "CRM",
+    "NAGORNO KARABAKH": "NKR",
+    "ARTSAKH": "NKR",
+    "克什米尔": "KMR",
+    "KASHMIR": "KMR",
+    "藏南": "STB",
+    "SOUTHERN TIBET": "STB",
+    "阿克赛钦": "AKC",
+    "AKSAI CHIN": "AKC",
+    "钓鱼岛及其附属岛屿": "DYA",
+    "DIAOYU DAO AND ITS AFFILIATED ISLANDS": "DYA",
+    "钓鱼岛": "DYA",
+    "DIAOYU DAO": "DYA",
+    "DIAOYU ISLANDS": "DYA"
+  },
+  "notes": [
+    "ISO codes identify countries or areas. Area codes do not establish sovereignty.",
+    "CHN includes mainland China, Hong Kong, Macao and Taiwan; DNK includes Greenland and the Faroe Islands.",
+    "Cook Islands and Niue remain separate: China has diplomatic relations with both.",
+    "MARK assigns stations within the PSE reference geometry to ISR for country/region display and filtering; the original PSE source code remains in the reference data.",
+    "Territories with unresolved or changing status retain a neutral region entry and no national flag; this is not recognition of a state.",
+    "FLK follows China's support for Argentina's sovereignty claim over the Malvinas Islands.",
+    "Provider station IDs, metadata and download paths retain their original area codes.",
+    "Country affiliation is geographic. Agency/operator metadata and source country codes do not establish territorial sovereignty.",
+    "The PSE reference geometry uses OCHA oPt COD-AB (West Bank including East Jerusalem and Gaza) as a station-classification footprint; this application presentation does not alter source metadata.",
+    "Kashmir is shown as an unresolved region, excluding the China administrative reference area; control lines are not international borders.",
+    "Southern Tibet, Aksai Chin, Diaoyu Dao and its affiliated islands are in CHN. Internal area aliases are not ISO state codes."
+  ],
+  "sources": [
+    {
+      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/oz_678770/1206_679062/1206x0_679064/",
+      "description": "MFA Denmark profile: Greenland and Faroe Islands autonomous territories of the Kingdom of Denmark; checked 2026-09-29."
+    },
+    {
+      "url": "https://www.gov.cn/guoqing/2005-09/13/content_2582640.htm",
+      "description": "Constitution of the PRC; Taiwan and special administrative regions."
+    },
+    {
+      "url": "https://www.naturalearthdata.com/about/worldview/",
+      "description": "Existing map Chinese worldview attributes, supplemented by explicit PRC country/area policy."
+    },
+    {
+      "title": "中国外交部：科摩罗国家概况（2026年6月）",
+      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/fz_677316/1206_677872/1206x0_677874/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "中国外交部：毛里求斯国家概况（2026年7月）",
+      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/fz_677316/1206_678164/1206x0_678166/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "中国外交部：乌克兰国家概况（2026年6月）",
+      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/oz_678770/1206_679786/1206x0_679788/",
+      "checked": "2026-09-29"
+    },
+    {
+      "title": "Natural Earth disputed areas: Chinese viewpoint metadata",
+      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_breakaway_disputed_areas.geojson",
+      "checked": "2026-09-29"
+    },
+    {
+      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/yz_676205/1206_676332/1206x0_676334/",
+      "description": "MFA Palestine profile (July 2026); country, West Bank/Gaza and Jerusalem context; checked 2026-09-29."
+    },
+    {
+      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/yz_676205/1206_677220/1206x0_677222/",
+      "description": "MFA India profile: area excludes China border occupied areas and India-controlled Kashmir; checked 2026-09-29."
+    },
+    {
+      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/yz_676205/1206_676308/1206x0_676310/",
+      "description": "MFA Pakistan profile: area excludes Pakistan-controlled Kashmir; checked 2026-09-29."
+    },
+    {
+      "url": "https://www.diaoyudao.org.cn/node_7217571.htm",
+      "description": "Chinese Diaoyu Dao site: territory attribution and eight island coordinates; checked 2026-09-29."
+    },
+    {
+      "url": "https://data.humdata.org/dataset/cod-ab-pse",
+      "description": "OCHA oPt/FISS State of Palestine COD-AB v01, reviewed 2024-12-24; used for geographic outline, not as a PRC reviewed map."
+    }
+  ],
+  "countryNames": {
+    "CHN": {
+      "zh": "中国",
+      "en": "China"
+    },
+    "DNK": {
+      "zh": "丹麦",
+      "en": "Denmark"
+    },
+    "FRA": {
+      "zh": "法国",
+      "en": "France"
+    },
+    "NLD": {
+      "zh": "荷兰",
+      "en": "Netherlands"
+    },
+    "USA": {
+      "zh": "美国",
+      "en": "United States"
+    },
+    "GBR": {
+      "zh": "英国",
+      "en": "United Kingdom"
+    },
+    "FIN": {
+      "zh": "芬兰",
+      "en": "Finland"
+    },
+    "NOR": {
+      "zh": "挪威",
+      "en": "Norway"
+    },
+    "AUS": {
+      "zh": "澳大利亚",
+      "en": "Australia"
+    },
+    "NZL": {
+      "zh": "新西兰",
+      "en": "New Zealand"
+    },
+    "SRB": {
+      "zh": "塞尔维亚",
+      "en": "Serbia"
+    },
+    "SOM": {
+      "zh": "索马里",
+      "en": "Somalia"
+    },
+    "CYP": {
+      "zh": "塞浦路斯",
+      "en": "Cyprus"
+    },
+    "ARG": {
+      "zh": "阿根廷",
+      "en": "Argentina"
+    },
+    "IND": {
+      "zh": "印度",
+      "en": "India"
+    },
+    "COM": {
+      "zh": "科摩罗",
+      "en": "Comoros"
+    },
+    "MUS": {
+      "zh": "毛里求斯",
+      "en": "Mauritius"
+    },
+    "UKR": {
+      "zh": "乌克兰",
+      "en": "Ukraine"
+    },
+    "SYR": {
+      "zh": "叙利亚",
+      "en": "Syria"
+    },
+    "GEO": {
+      "zh": "格鲁吉亚",
+      "en": "Georgia"
+    },
+    "MDA": {
+      "zh": "摩尔多瓦",
+      "en": "Moldova"
+    },
+    "AZE": {
+      "zh": "阿塞拜疆",
+      "en": "Azerbaijan"
+    },
+    "KMR": {
+      "zh": "克什米尔",
+      "en": "Kashmir"
+    }
+  },
+  "geoOverrides": [
+    {
+      "area": "CRM",
+      "source": "disputed",
+      "feature": "B89"
+    },
+    {
+      "area": "GLN",
+      "source": "disputed",
+      "feature": "B16"
+    },
+    {
+      "area": "ABK",
+      "source": "disputed",
+      "feature": "B35"
+    },
+    {
+      "area": "OSA",
+      "source": "disputed",
+      "feature": "B37"
+    },
+    {
+      "area": "TRN",
+      "source": "disputed",
+      "feature": "B36"
+    },
+    {
+      "area": "NKR",
+      "source": "disputed",
+      "feature": "B38"
+    },
+    {
+      "area": "DNT",
+      "source": "disputed",
+      "feature": "C02"
+    },
+    {
+      "area": "LHN",
+      "source": "disputed",
+      "feature": "C03"
+    },
+    {
+      "area": "MYT",
+      "source": "world-country",
+      "feature": "FRA",
+      "bounds": [
+        44,
+        -14,
+        46,
+        -11
+      ]
+    },
+    {
+      "area": "IOT",
+      "source": "world-country",
+      "feature": "IOT"
+    },
+    {
+      "area": "PSE",
+      "source": "palestine-ocha"
+    },
+    {
+      "area": "KAS",
+      "source": "disputed",
+      "feature": "B45",
+      "excludeChina": true
+    },
+    {
+      "area": "KMR",
+      "source": "disputed-union",
+      "features": [
+        "B05",
+        "B08",
+        "B45"
+      ],
+      "excludeChina": true
+    },
+    {
+      "area": "STB",
+      "source": "disputed",
+      "feature": "B00",
+      "insideChina": true
+    },
+    {
+      "area": "AKC",
+      "source": "disputed",
+      "feature": "B07",
+      "insideChina": true
+    },
+    {
+      "area": "DYA",
+      "source": "china-admin",
+      "adcode": 710000,
+      "bounds": [
+        123.33333333333333,
+        25.666666666666668,
+        124.66666666666667,
+        26
+      ]
+    },
+    {
+      "area": "TWN",
+      "source": "china-admin",
+      "adcode": 710000
+    },
+    {
+      "area": "HKG",
+      "source": "china-admin",
+      "adcode": 810000
+    },
+    {
+      "area": "MAC",
+      "source": "china-admin",
+      "adcode": 820000
+    },
+    {
+      "area": "CHN",
+      "source": "china-admin"
+    }
+  ]
+}

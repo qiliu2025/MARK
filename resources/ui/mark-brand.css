@@ -1,0 +1,53 @@
+/* MARK brand surfaces; the observation and product layouts remain in ui.css. */
+.mark-app-icon { display:block; object-fit:contain; user-select:none; }
+html .brand-mark { width:37px; height:37px; flex:0 0 37px; background:none; border:0; box-shadow:none; border-radius:9px; }
+.brand-mark .mark-app-icon { width:37px; height:37px; }
+html .brand-copy { display:flex; flex-direction:column; align-items:flex-start; gap:1px; letter-spacing:0; }
+html .brand-copy b { color:var(--ink); line-height:24px; font-size:24px; font-weight:700; letter-spacing:1.8px; }
+html .brand-copy em { color:var(--muted); font-size:8px; font-weight:500; letter-spacing:1.05px; line-height:12px; }
+html .topbar .mark-top-action { position:relative; flex:0 0 34px; width:34px; height:34px; margin-left:0; color:var(--muted); }
+html .topbar .mark-top-action:hover { color:var(--blue-dark); background:var(--blue-soft); border-color:var(--line-strong); }
+.mark-top-action .ico { width:18px; height:18px; }
+.mark-eyebrow { display:block; color:#7196a6; font-size:9px; font-weight:700; letter-spacing:1.45px; line-height:16px; }
+.mark-layer { position:fixed; z-index:500; inset:0; display:flex; align-items:center; justify-content:center; }
+.mark-scrim { position:absolute; inset:0; width:100%; height:100%; background:rgba(12,32,47,.38); }
+.mark-about-dialog { position:relative; width:min(660px,calc(100vw - 48px)); max-height:calc(100vh - 48px); overflow:auto; border-radius:14px; background:var(--surface); border:1px solid var(--line); box-shadow:0 24px 90px rgba(16,38,56,.22); outline:none; }
+.mark-about-hero { position:relative; min-height:170px; display:flex; align-items:center; gap:24px; padding:32px 34px; background:var(--mark-about-hero,#245ac5); color:#fff; overflow:hidden; }
+.mark-about-hero::after { content:""; position:absolute; width:400px; height:140px; border:1px solid #406078; border-radius:50%; right:-90px; top:10px; transform:rotate(-28deg); opacity:.5; pointer-events:none; }
+.mark-about-hero>.icon-btn { position:absolute; top:14px; right:14px; color:#dbe6ec; z-index:1; }
+.mark-about-hero>.icon-btn:hover { background:#2b4b62; border-color:#466174; }
+.mark-about-hero .mark-app-icon { width:90px; height:90px; }
+.mark-about-hero .mark-eyebrow { color:#9db9c7; font-size:9px; }
+.mark-about-hero h1 { font-size:42px; line-height:48px; letter-spacing:3px; margin:1px 0 5px; }
+.mark-about-hero p { color:#ccdce5; margin:0; font-size:13px; }
+.mark-about-body { padding:24px 34px 28px; }
+.mark-about-body h2 { margin:0 0 9px; color:var(--ink); font-size:20px; font-weight:650; }
+.mark-about-body>p:not(.mark-full-name) { color:var(--muted); margin:0; font-size:13px; line-height:1.8; }
+.mark-capabilities { display:grid; grid-template-columns:1fr 1fr; gap:23px 20px; margin-top:27px; }
+.mark-capabilities>div { display:grid; grid-template-columns:21px minmax(0,1fr); column-gap:9px; row-gap:5px; align-items:center; }
+.mark-capabilities .ico { color:#7196a6; width:18px; height:18px; }
+.mark-capabilities b { color:var(--ink-2); font-size:12px; font-weight:600; }
+.mark-capabilities span { grid-column:2; color:var(--muted); font-size:11px; line-height:1.7; }
+@media (max-height:800px) { .mark-about-hero { min-height:145px; padding-top:24px; padding-bottom:24px; } .mark-about-body { padding-top:20px; padding-bottom:20px; } }
+
+.mark-about-hero { min-height:116px; padding:22px 30px; }
+.mark-about-hero .mark-app-icon { width:68px; height:68px; }
+.mark-about-hero h1 { font-size:34px; line-height:40px; }
+.mark-about-hero>div { min-width:0; }
+.mark-about-hero .mark-app-icon { flex-shrink:0; }
+.mark-about-hero .mark-full-name { color:#e5eefb; font-size:13px; line-height:1.5; margin:0; }
+.mark-about-body { padding:20px 30px; }
+.mark-release-grid,.mark-coverage-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 22px; margin:0 0 20px; }
+.mark-release-grid>div,.mark-coverage-grid>div { min-width:0; }
+.mark-release-grid dt,.mark-coverage-grid dt { font-size:11px; color:var(--muted); margin-bottom:5px; }
+.mark-release-grid dd,.mark-coverage-grid dd { margin:0; font-size:14px; color:var(--ink); font-weight:600; }
+.mark-repository { grid-column:1/-1; }
+.mark-repository a { color:var(--brand,#2865d8); text-decoration:none; word-break:break-word; font-size:13px; }
+.mark-repository a:hover { text-decoration:underline; }
+.mark-about-body h2 { font-size:14px; margin:0 0 13px; }
+.mark-about-body .mark-coverage-note { font-size:11px; line-height:1.5; margin:-6px 0 18px; }
+.mark-changelog { border-top:1px solid var(--line); padding-top:13px; font-size:12px; }
+.mark-changelog summary { cursor:pointer; color:var(--ink); font-weight:600; }
+.mark-changelog time { display:block; margin-top:11px; color:var(--muted); font-size:11px; }
+.mark-changelog ul { padding-left:17px; margin:7px 0 0; color:var(--ink-2); line-height:1.8; }
+@media(max-width:520px) { .mark-about-body { padding:18px 22px; } .mark-release-grid,.mark-coverage-grid { gap:12px; } }

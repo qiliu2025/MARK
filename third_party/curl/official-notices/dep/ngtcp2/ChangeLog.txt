@@ -1,0 +1,837 @@
+commit f9e9ff01ad2c8116bc09de4f644b0028a61486a6
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-26
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-26
+
+    Bump package and library versions
+
+commit 7249315306243aa8584768297598d7c05ee23a89
+Merge: e568141e 65542b4a
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-26
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-26
+
+    Merge pull request #2268 from ngtcp2/require-nghttp3-v1.18.0
+    
+    Require nghttp3 >= 1.18.0
+
+commit 65542b4a6ab25cd0d48364daaa55c6eec0cc8583
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-26
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-26
+
+    Require nghttp3 >= 1.18.0
+
+commit e568141e58f25be1fc155fdd3f60b4bec4855fa4
+Merge: 3e978604 8b15dfdb
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-26
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-26
+
+    Merge pull request #2267 from ngtcp2/revert-2248
+    
+    Revert "Make max CRYPTO offsets configurable"
+
+commit 8b15dfdbe94a151a90254722aead05617d0922d4
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-26
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-26
+
+    Revert "Make max CRYPTO offsets configurable"
+    
+    This reverts commit 9eaa4dff4e4ed5d7e65e9f56c88911df2cdbd585.
+
+commit 3e9786047831c8515d5b127ae8d03494fa6d92f8
+Merge: a8d97942 14d1e871
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-25
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-25
+
+    Merge pull request #2266 from ngtcp2/fuzz-more-parameters-fuzzing
+    
+    fuzz: Fuzz more parameters like CID, AEAD tag, and transport parameters
+
+commit 14d1e871a2ea2f3c5a40607d07e69129bbd8eefa
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-25
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-25
+
+    fuzz: Fuzz more parameters like CID, AEAD tag, and transport parameters
+
+commit a8d979427ee49ecdde47577046538c2e0e8a5745
+Merge: d943f815 0e630036
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-25
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-25
+
+    Merge pull request #2265 from ngtcp2/bump-picotls
+    
+    Bump picotls
+
+commit 0e6300361cc3d6d1b0974f3f06929919a6a23a43
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-25
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-25
+
+    Bump picotls
+
+commit d943f815c925610c84236402418f8abdebc3d62d
+Merge: c6b19830 372b8f4a
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-25
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-25
+
+    Merge pull request #2264 from ngtcp2/bump-aws-lc
+    
+    Bump aws-lc to v5.4.0
+
+commit 372b8f4adb3a82486467eeb0569c8490e5b2e71d
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-25
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-25
+
+    Bump aws-lc to v5.4.0
+
+commit c6b19830fd7986870e6421d8d418d82bf6b55b11
+Merge: 8af8fa68 6e9ba613
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-25
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-25
+
+    Merge pull request #2263 from ngtcp2/bump-boringssl
+    
+    Bump boringssl
+
+commit 6e9ba613e82d8f8bdda7f7418e6da017400f5775
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-25
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-25
+
+    Bump boringssl
+
+commit 8af8fa688953413674da45e0be5a833fbf68fae5
+Merge: b09023f2 06dd9576
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-25
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-25
+
+    Merge pull request #2262 from ngtcp2/doc-msvc-min-ver
+    
+    Document about C11 compilers
+
+commit 06dd95764d2e558d2c99a2f51540e9aadca4e97c
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-25
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-25
+
+    Document about C11 compilers
+
+commit b09023f24dd362a8ae4ea1c9ecb06e2684a85ac6
+Merge: 410fc7d0 479960f9
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-23
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-23
+
+    Merge pull request #2261 from ngtcp2/ksl-remove-unneeded-null-init
+    
+    ksl: Remove unnecessary NULL initialization
+
+commit 479960f97490fbc1a5ab5fc5f1f42b9384c1050d
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-23
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-23
+
+    ksl: Remove unnecessary NULL initialization
+
+commit 410fc7d08736d253454799f0db11abcbfe61f33b
+Merge: 72feb666 b4f8993f
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-23
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-23
+
+    Merge pull request #2260 from ngtcp2/quictls-rework-global-init
+    
+    crypto/quictls: Rework the global initialization
+
+commit b4f8993f0a5e7e78c8227f6de2924ef20c9aca9d
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-23
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-23
+
+    crypto/quictls: Rework the global initialization
+    
+    Do the same initialization as we do for ossl.
+
+commit 72feb666e3ddcb7d0dfb9a3dac59135a839e9486
+Merge: 1770f476 45a0ea89
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-23
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-23
+
+    Merge pull request #2259 from ngtcp2/migrate-back-to-old-path
+    
+    Deal with the case where client migrate back to the original path
+
+commit 45a0ea8929a59ce7d5b0aa000a7119758e936bea
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-23
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-23
+
+    Deal with the case where client migrate back to the original path
+    
+    Previously, we have handled the case when client migrates back to the
+    original path while the server is validating the new path, but we
+    missed the case where the client migrates back to the original path
+    after successful validation and server is doing the path validation to
+    the original path with NGTCP2_PV_FLAG_DONT_CARE flag set.  This commit
+    fixes it.
+
+commit 1770f476d0dfc7b69a365b3c0f95544461d13cd8
+Merge: 6a18b3cb d2c28e7e
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-23
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-23
+
+    Merge pull request #2256 from ngtcp2/amend-2255
+    
+    Amend ba2e5f0142863a0a539671e0194de6019008ad3e (part of #2255)
+
+commit d2c28e7eb641b2da38fc22061c013c48f2421573
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-22
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-23
+
+    Amend ba2e5f0142863a0a539671e0194de6019008ad3e (part of #2255)
+
+commit 6a18b3cb270d96b35d4486b21cc90b4f43cc666d
+Merge: 4841a5ce c24edce2
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-22
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-22
+
+    Merge pull request #2255 from ngtcp2/minor-fixups
+    
+    Minor fixups
+
+commit c24edce204fd365be8b4bcdeae4b519385acb32a
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-22
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-22
+
+    boringssl: Deal with AES_set_encrypt_key failure
+
+commit e53292d6dba80dcf651227b8ded1d41f64f7f7c7
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-22
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-22
+
+    quictls, ossl: Handle KDF context creation error
+
+commit 0807718679c7841a040f9f5c0d7a5493c60bb915
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-22
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-22
+
+    ksl: Rearrange stream creation to avoid inconsistent state on failure
+
+commit ba2e5f0142863a0a539671e0194de6019008ad3e
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-22
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-22
+
+    bbr: Clamp bdp to avoid overflow
+
+commit 85c8fc1c664159ebfc5c92592ec07019aa0ccd8c
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-22
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-22
+
+    lib: Clamp counts to avoid potential UB
+
+commit 4841a5ce98ef94cebaae83793fc87af552125959
+Merge: 37e63f73 059f9b76
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-21
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-21
+
+    Merge pull request #2254 from ngtcp2/acktr-remove-entry-allocation
+    
+    Remove ngtcp2_acktr_entry and squeeze len into key
+
+commit 059f9b76f7ce9e5190878cb42e6a10268aad6032
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-21
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-21
+
+    Remove ngtcp2_acktr_entry and squeeze len into key
+
+commit 37e63f730e4f21da94663244c2cd8c66cc3527f4
+Merge: 71d04858 dbcc2a87
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-21
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-21
+
+    Merge pull request #2253 from ngtcp2/optimize-acktr
+    
+    Optimize acktr
+
+commit dbcc2a87c471c7bde3ed83ae887d7422ae4c892d
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-21
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-21
+
+    Remove pkt_num from ngtcp2_acktr_entry
+
+commit 71d04858b8ef3cfd02992c6dd9d646fc37efb5f5
+Merge: 589e241a 595643c6
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-21
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-21
+
+    Merge pull request #2252 from ngtcp2/dependabot/github_actions/actions/setup-python-7
+    
+    build(deps): bump actions/setup-python from 6 to 7
+
+commit e1e0230a5b1b9ae71f3c7dd0a90f99d1d782056d
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-21
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-21
+
+    Remove tstamp from ngtcp2_acktr_entry
+
+commit 595643c698725e04556445a5551f4a0eb2b22a6d
+Author:     dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+AuthorDate: 2026-07-20
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-20
+
+    build(deps): bump actions/setup-python from 6 to 7
+    
+    Bumps [actions/setup-python](https://github.com/actions/setup-python) from 6 to 7.
+    - [Release notes](https://github.com/actions/setup-python/releases)
+    - [Commits](https://github.com/actions/setup-python/compare/v6...v7)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/setup-python
+      dependency-version: '7'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+commit 589e241a2480702e380ffcdbe23f075dac0167d2
+Merge: 30866a4c 563ecbc3
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-17
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-17
+
+    Merge pull request #2250 from ngtcp2/optimize-rob
+    
+    Optimize rob
+
+commit 563ecbc306063f534f385a5828651451358ac7eb
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-17
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-17
+
+    fuzz: Exercise ngtcp2_rob_remove_prefix
+
+commit d7bbf94f7f65e54b0e8bdea526c3cde842b15bd8
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-17
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-17
+
+    Remove ngtcp2_rob_data
+
+commit 6610bcd3b37b15816da4ff8cdd9c735c4eff88c9
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-17
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-17
+
+    Remove range from ngtcp2_rob_data
+
+commit eb4664b80da89c669f7131720eb0aaeb7753a8f8
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-17
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-17
+
+    Remove ngtcp2_rob_gap
+    
+    Remove ngtcp2_rob_gap.  Just using key is enough.
+
+commit 30866a4c4c77355fa1eaa5295f6d4097bb3c3275
+Merge: ab8877b5 198af21e
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-15
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-15
+
+    Merge pull request #2249 from ngtcp2/cleanup
+    
+    Minor cleanup
+
+commit 198af21e08fe28a3809fcce4d7851255b33cd887
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-15
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-15
+
+    Minor cleanup
+
+commit ab8877b5c6aaac29f8ff2a16f83ca9d23f4962ca
+Merge: df74d55b 9eaa4dff
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-15
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-15
+
+    Merge pull request #2248 from ngtcp2/configurable-max-crypto-offsets
+    
+    Make max CRYPTO offsets configurable
+
+commit 9eaa4dff4e4ed5d7e65e9f56c88911df2cdbd585
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-15
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-15
+
+    Make max CRYPTO offsets configurable
+    
+    Previously, the maximum offsets in each encryption level are
+    hard-coded.  Now they are configurable via ngtcp2_settings.
+
+commit df74d55bcad7ea4fd98e6bbf44352fecacf15495
+Merge: e2767a71 fb374f44
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-15
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-15
+
+    Merge pull request #2247 from ngtcp2/update-doc
+    
+    Update doc
+
+commit fb374f44651362300d4ee63954c195cdb39d7058
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-15
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-15
+
+    Update doc
+
+commit e2767a710e9cbb32a027ccbabc33db7ffc65db1f
+Merge: 6bff4e87 88800128
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-15
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-15
+
+    Merge pull request #2246 from ngtcp2/partially-revert-2242
+    
+    Partially revert #2242
+
+commit 888001287294e4e754fe4c75fb7ea49ed8fdb3f2
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-15
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-15
+
+    Partially revert #2242
+    
+    Setting error code without sending STOP_SENDING or RESET_STREAM is too
+    much and it voids the purpose of telling the detailed error codes to
+    the application.
+
+commit 6bff4e8713c36ab729659a7d1604f64ed364bbeb
+Merge: fcb5cdab f0e79546
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-15
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-15
+
+    Merge pull request #2245 from ngtcp2/increase-initial-crypto-limit
+    
+    Expand NGTCP2_MAX_INITIAL_CRYPTO_OFFSET to 64K
+
+commit f0e795465e79cde19fb6250a2a1b34dfbbe633b0
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-14
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-14
+
+    Expand NGTCP2_MAX_INITIAL_CRYPTO_OFFSET to 64K
+
+commit fcb5cdaba44a8fb1c821319af306e3f38f18e738
+Merge: ae138508 daef136e
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-12
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-12
+
+    Merge pull request #2242 from ngtcp2/tweak-stream-close2
+    
+    Tweak stream_close2 callback behavior
+
+commit daef136eafaacba867b821cfa443d12f0ac18218
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-12
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-12
+
+    Tweak stream_close2 callback behavior
+    
+    For rx_app_error_code, if the local endpoint shuts down the receiving
+    side of the stream, the error code is used as rx_app_error_code.  It
+    is preferred to the error code in the incoming RESET_STREAM frame.
+    
+    If ngtcp2_conn_shutdown_stream_read or
+    ngtcp2_conn_shutdown_stream_write is called, and the local endpoint
+    does not send STOP_SENDING or RESET_STREAM frame due to some
+    conditions, the app error code is still recorded if it has not been
+    recorded.
+    
+    These change aims to match the behavior of the existing single
+    app_error_code handling for stream_close callback.
+
+commit ae138508b1376acb5d53cf815d8a06a1e0d47f18
+Merge: ac14c518 3fc45af7
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-12
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-12
+
+    Merge pull request #2241 from ngtcp2/examples-stream-close2
+    
+    examples: Adopt ngtcp2_stream_close2 callback
+
+commit 3fc45af7b296c633507bcbcd28970d354518692b
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-12
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-12
+
+    examples: Adopt ngtcp2_stream_close2 callback
+
+commit ac14c5180486404ecda2a4e3d00bbd918112f79c
+Merge: d0067629 13a62040
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-11
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-11
+
+    Merge pull request #2240 from ngtcp2/stream-close2
+    
+    Add ngtcp2_stream_close2 callback
+
+commit 13a620406808bb322135575f8c34043c7b591a42
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-10
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-11
+
+    Add ngtcp2_stream_close2 callback
+
+commit d0067629603dabd3db7590cf2e5c451bb15b02cb
+Merge: 713151dc 5cbebb35
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-10
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-10
+
+    Merge pull request #2239 from ngtcp2/update-doc
+    
+    Update doc
+
+commit 5cbebb35871cf7b36e7d86651f97d736e4b03114
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-10
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-10
+
+    Update doc
+
+commit 713151dcef2b48e3f2d7977d091d8c92c0e9171d
+Merge: 94302845 d9e2b0ec
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-08
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-08
+
+    Merge pull request #2238 from ngtcp2/update-bbr
+    
+    Update bbr
+
+commit d9e2b0ecb2e79924c6d0bf36aae3f7a4cca789f5
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-08
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-08
+
+    bbr: Fix undo state transition
+
+commit 92b721427e4c266d21d7f4f92a8d5dc5ba325ad6
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-08
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-08
+
+    bbr: Add Precautionary Bandwidth Probing
+
+commit a2b8fd863c546346d8894260181a833817b63871
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-08
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-08
+
+    bbr: Rename variables
+
+commit 9430284594ca30b2fec54152bf152aa35b35eead
+Merge: 7f442651 518d7ff6
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-06
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-06
+
+    Merge pull request #2237 from ngtcp2/cleanup
+    
+    Cleanup
+
+commit 518d7ff63a0679aa19742b617745ba548c5bf73a
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-06
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-06
+
+    Update doc
+
+commit cc333d2d9f73d2ca57d6be0fc0e02f8fdc439b60
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-06
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-06
+
+    ngtcp2_conn_shutdown_stream_read no longer frees strm->rx.rob
+
+commit 7f44265182e591fee385fbf99405d84d155fa1e8
+Merge: 766f06a3 3204235b
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-06
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-06
+
+    Merge pull request #2236 from ngtcp2/stop-buffering-after-shutdown-stream-read
+    
+    Stop buffering data after shutting downstream read
+
+commit 3204235b34db669f88ba3676daadda3bbd792006
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-05
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-05
+
+    Stop buffering data after shutting downstream read
+
+commit 766f06a376c5f9c6e39d3b05d60fe7f97b6e52f9
+Merge: 93ca8b70 9e91cc08
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-05
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-05
+
+    Merge pull request #2235 from ngtcp2/rework-conn-window-update-after-stop-sending
+    
+    Rework connection flow window accounting after sending STOP_SENDING
+
+commit 9e91cc0874a0fdde08534bbaf6c72f0f0fa72f82
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-05
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-05
+
+    Rework connection flow window accounting after sending STOP_SENDING
+    
+    Instead of immediately recovering connection flow window, only recover
+    the amount of data that would otherwise are passed to the application.
+    The stream data are still buffered for STOP_SENDING and the received
+    offset is updated, so that we can close the stream when all stream
+    data are received to its fin.  This is required because the remote
+    endpoint might still send all its data after receiving STOP_SENDING.
+
+commit 93ca8b7055709b75b0af6187e8bca8c3fd01573a
+Merge: 76741d26 ccbbf1a3
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-04
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-04
+
+    Merge pull request #2234 from ngtcp2/verify-fr-end-offset-before-update
+    
+    Verify the end offset of STREAM frame before updating flow control
+
+commit ccbbf1a34b13279ddedf2d4ac82e7cc183bbfd5c
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-04
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-04
+
+    Verify the end offset of STREAM frame before updating flow control
+
+commit 76741d2654f51111931ae4926ea662b18e770e10
+Merge: 894f8584 df611952
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-04
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-04
+
+    Merge pull request #2233 from ngtcp2/shutdown-read-cleanup
+    
+    Remove condition that is always true
+
+commit df61195260a6ca230caf6083d6b40dcc784feb9e
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-04
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-04
+
+    Remove condition that is always true
+
+commit 894f858421ec8c37dbfcbd9c8deb9cb5b383ac68
+Merge: c24b1269 172673d8
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-06-30
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-30
+
+    Merge pull request #2232 from ngtcp2/bbr-update-longterm-vars
+    
+    bbr: Update longterm variable computation
+
+commit 172673d815a0c8183dea55965f8f922c6b9ea822
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-06-30
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-06-30
+
+    bbr: Update longterm variable computation
+
+commit c24b12690c5bdf7ad2715ae427504e76bf5c6ffc
+Merge: 206b5bf7 a637eb48
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-06-29
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-29
+
+    Merge pull request #2231 from ngtcp2/ksl-align-keys
+    
+    ksl: Align keys in 8 bytes boundary
+
+commit a637eb4871b7d863eabd3271b4c10a176d27deb9
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-06-29
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-06-29
+
+    ksl: Align keys in 8 bytes boundary
+
+commit 206b5bf7b97798a20181ce2ec60dfff84eb55620
+Merge: 3a38b10c 327810b7
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-06-29
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-29
+
+    Merge pull request #2229 from ngtcp2/dependabot/github_actions/actions/cache-6
+    
+    build(deps): bump actions/cache from 5 to 6
+
+commit 327810b75dd9ae41b3eda7af95704d4f74a50113
+Author:     dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+AuthorDate: 2026-06-29
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-29
+
+    build(deps): bump actions/cache from 5 to 6
+    
+    Bumps [actions/cache](https://github.com/actions/cache) from 5 to 6.
+    - [Release notes](https://github.com/actions/cache/releases)
+    - [Changelog](https://github.com/actions/cache/blob/main/RELEASES.md)
+    - [Commits](https://github.com/actions/cache/compare/v5...v6)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/cache
+      dependency-version: '6'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+commit 3a38b10c6de82bfa3a870d8eb438406f7994b247
+Merge: 38943efd 0cbaa878
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-06-28
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-28
+
+    Merge pull request #2228 from ngtcp2/fix-gcc-16-build
+    
+    Fix build error with gcc-16
+
+commit 0cbaa8783ec109be6f3af147a1397816b31a17d1
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-06-28
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-06-28
+
+    Fix build error with gcc-16
+
+commit 38943efd53cd75b9bb928d548a2bba15ba9e294c
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-06-28
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-06-28
+
+    Bump package version

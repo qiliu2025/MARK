@@ -1,0 +1,167 @@
+commit dbfc24286138cb0b6490160e7ca87fe1ce6722a0
+Merge: fe5f1d6 b47045c
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-26
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-26
+
+    Merge pull request #542 from ngtcp2/gcc-16
+    
+    Fix build error with gcc-16
+
+commit b47045cbdf68b3ee30f658e84b73f90d79999bae
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-26
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-26
+
+    Fix build error with gcc-16
+
+commit fe5f1d691837696575659bcc45469bc1adbc17b1
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-26
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-26
+
+    Bump package and library versions
+
+commit 5405325a2492dd5a798f359bfe3be32a652203b1
+Merge: 7a1fc29 a2604f7
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-25
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-25
+
+    Merge pull request #541 from ngtcp2/doc-c-compiler
+    
+    Document C compilers
+
+commit a2604f7abbb28fbca2bed4e0279d650b10d0eca8
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-25
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-25
+
+    Document C compilers
+
+commit 7a1fc297e92f7a7434d939a594e8917af71fa159
+Merge: a587264 d85e730
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-25
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-25
+
+    Merge pull request #540 from ngtcp2/ksl-port-ngtcp2-changes
+    
+    ksl: Port ngtcp2 changes
+
+commit d85e730cc2a0cb0c91e922365e12ad5b1d6169d4
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-25
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-25
+
+    ksl: Port ngtcp2 changes
+
+commit a5872645446cdc07e897fea33b61a3c665563da9
+Merge: 5621d48 72ade73
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-17
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-17
+
+    Merge pull request #539 from ngtcp2/header-length-validation
+    
+    Validate header length against the estimated uncompressed length
+
+commit 72ade73da2e8cdb87b7d3c5844ca44e2f7bb853b
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-17
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-17
+
+    Validate header length against the estimated uncompressed length
+
+commit 5621d4831117e4e88bb2b3b5302492eba19c1648
+Merge: d6ad8ee abc9333
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-15
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-15
+
+    Merge pull request #538 from ngtcp2/update-doc
+    
+    Update doc
+
+commit abc93331cea9cd89eadfea93266f9e627743ddce
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-15
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-15
+
+    Update doc
+
+commit d6ad8ee80bc54f13b1141604d7ffad1dd6fd5df3
+Merge: 37c0a24 ef5257f
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-12
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-12
+
+    Merge pull request #537 from ngtcp2/stream-close2
+    
+    Add nghttp3_conn_close_stream2 and nghttp3_stream_close2 callback
+
+commit ef5257f006ecdb1ff55123b5d21687e21e32e8a3
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-11
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-12
+
+    Add nghttp3_conn_close_stream2 and nghttp3_stream_close2 callback
+
+commit 37c0a24f67b539392cd0de8a7e089f0542514926
+Merge: e6a7130 7a4dc85
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-07-11
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-07-11
+
+    Merge pull request #536 from ngtcp2/update-doc
+    
+    Update doc
+
+commit 7a4dc85eb9f3c7c9b61460ba3632fadb443a8b4b
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-07-11
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-07-11
+
+    Update doc
+
+commit e6a713006391469fcfca540d9c9ce2c8cdadc820
+Merge: 293e613 e9a5378
+Author:     Tatsuhiro Tsujikawa <404610+tatsuhiro-t@users.noreply.github.com>
+AuthorDate: 2026-06-29
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-06-29
+
+    Merge pull request #534 from ngtcp2/ksl-align-keys
+    
+    ksl: Align keys in 8 bytes boundary
+
+commit e9a53789707be2eeef7e4f38bbabb07a1a771fce
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-06-29
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-06-29
+
+    ksl: Align keys in 8 bytes boundary
+
+commit 293e613c9cd6c9f8ab14c3657519259b5873dbff
+Author:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+AuthorDate: 2026-06-27
+Commit:     Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+CommitDate: 2026-06-27
+
+    Bump package version

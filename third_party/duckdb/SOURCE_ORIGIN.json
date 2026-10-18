@@ -1,0 +1,18 @@
+{
+  "version": "v1.5.5",
+  "source_id": "d8cdaa33fd",
+  "archives": [
+    {
+      "file": "duckdb-v1.5.5.tar.gz",
+      "url": "https://codeload.github.com/duckdb/duckdb/tar.gz/refs/tags/v1.5.5",
+      "bytes": 101169313,
+      "sha256": "f33155ff962e6e1e08fd1e9caffa487d4325aa60999e2eabc76feff534d6558b"
+    },
+    {
+      "file": "libduckdb-src-v1.5.5.zip",
+      "url": "https://github.com/duckdb/duckdb/releases/download/v1.5.5/libduckdb-src.zip",
+      "bytes": 4974643,
+      "sha256": "102813201cf8072b8a56b6013978963f3c89202a148fd152d06909477e36fbf8"
+    }
+  ]
+}

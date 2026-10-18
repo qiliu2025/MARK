@@ -1,0 +1,17 @@
+{
+  "source": "https://www.diaoyudao.org.cn/node_7217571.htm",
+  "checked": "2026-09-29",
+  "description": "Official published geographic locations and approximate lengths. Point symbols are geographic references, not fabricated coastlines or maritime boundaries.",
+  "country": "CHN",
+  "area": "DYA",
+  "islands": [
+    {"name": "钓鱼岛", "nameEn": "Diaoyu Dao", "latitudeMinutes": 44.6, "longitudeDegrees": 123, "longitudeMinutes": 28.4, "lengthMetres": 3641},
+    {"name": "黄尾屿", "nameEn": "Huangwei Yu", "latitudeMinutes": 55.4, "longitudeDegrees": 123, "longitudeMinutes": 40.9, "lengthMetres": 1293},
+    {"name": "赤尾屿", "nameEn": "Chiwei Yu", "latitudeMinutes": 55.3, "longitudeDegrees": 124, "longitudeMinutes": 33.5, "lengthMetres": 484},
+    {"name": "北小岛", "nameEn": "Bei Xiaodao", "latitudeMinutes": 43.8, "longitudeDegrees": 123, "longitudeMinutes": 32.5, "lengthMetres": 1030},
+    {"name": "南小岛", "nameEn": "Nan Xiaodao", "latitudeMinutes": 43.4, "longitudeDegrees": 123, "longitudeMinutes": 33.0, "lengthMetres": 1147},
+    {"name": "北屿", "nameEn": "Bei Yu", "latitudeMinutes": 46.9, "longitudeDegrees": 123, "longitudeMinutes": 32.6, "lengthMetres": 193},
+    {"name": "南屿", "nameEn": "Nan Yu", "latitudeMinutes": 45.3, "longitudeDegrees": 123, "longitudeMinutes": 34.0, "lengthMetres": 170},
+    {"name": "飞屿", "nameEn": "Fei Yu", "latitudeMinutes": 44.1, "longitudeDegrees": 123, "longitudeMinutes": 30.4, "lengthMetres": 63}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "curl_version": "8.21.0_7",
+  "official_package_url": "https://curl.se/windows/dl-8.21.0_7/curl-8.21.0_7-win64-mingw.zip",
+  "official_package_sha256": "e469dcdb219d0eca9236b01c7e4bb34fe04af3d4036d350829178dc60f241ae4",
+  "curl_executable_sha256": "d52793b2279d9226498dbadc00e524333fb64a996bda0ce621abe9a620f1188a",
+  "binary_match_verified": true,
+  "publicsuffix_source_sha256": "3985a73b3468643414598485f73149d0f0e1612a99b6fd458819498bf54500ec",
+  "certdata_source_included": false
+}

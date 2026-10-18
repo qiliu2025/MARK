@@ -1,0 +1,6 @@
+#pragma once
+#define IDI_SETUP_MARK 201
+#define IDR_SETUP_7Z 202
+#define IDR_SETUP_7Z_DLL 203
+#define IDR_SETUP_DUCKDB 204
+#define IDR_SETUP_LICENSE 205
