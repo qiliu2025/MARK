@@ -52,7 +52,7 @@ The installation occupies about **10.6 GB** and includes the user manual and cor
 
 ## Documentation
 
-- [User manual]
+- [User manual](docs/USER_MANUAL_EN.pdf)
 - [Build instructions](docs/BUILD.md)
 
 ## Licenses
