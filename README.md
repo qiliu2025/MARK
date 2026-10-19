@@ -52,7 +52,7 @@ The installation occupies about **10.6 GB** and includes the English PDF user ma
 
 ## Documentation
 
-- [User manual (English PDF)](docs/USER_MANUAL_EN.pdf)
+- [User manual (English PDF)]
 - [Build instructions](docs/BUILD.md)
 
 ## Licenses
