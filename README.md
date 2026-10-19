@@ -14,8 +14,6 @@ Find GNSS observation files and precise products using local metadata, station h
 
 通过 **Code → Download ZIP** 只能获取源码。 下载软件请点击上方 Windows 下载按钮，或前往 [Releases](https://github.com/qiliu2025/MARK/releases/latest)。已下载源码 ZIP 的用户，也可打开 [DOWNLOAD_MARK.html](DOWNLOAD_MARK.html) 获取下载链接。
 
-## If you have any questions or are interested in contributing to this work, please contact us at qi.liu@henu.edu.cn  | Yuzhi.Zhang@henu.edu.cn
-
 ## Screenshots
 
 ### Observation search
@@ -65,4 +63,4 @@ The knowledge bases use [separate proprietary terms](KNOWLEDGE_BASE_LICENSE.md).
 
 ## Feedback
 
-Report problems in [Issues](https://github.com/qiliu2025/MARK/issues), including the application version, date range, data source or product, and relevant logs. Remove passwords, tokens and private values before sharing logs.
+If you have any questions or are interested in contributing to this project, please feel free to contact us at qi.liu@henu.edu.cn or Yuzhi.Zhang@henu.edu.cn. You can also report issues via GitHub Issues, including the application version, date range, data source or product, and relevant logs.
