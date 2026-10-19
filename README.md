@@ -8,7 +8,7 @@ Find GNSS observation files and precise products using local metadata, station h
 
 **v1.0.0 · Windows 10/11 x64**
 
-[Release details](https://github.com/qiliu2025/MARK/releases/latest) · [User manual (English PDF)](docs/USER_MANUAL_EN.pdf)
+[Release details](https://github.com/qiliu2025/MARK/releases/latest) · [User manual](docs/USER_MANUAL_EN.pdf)
 
 **Code → Download ZIP contains source code.** To install MARK, use the Windows installer above or open [Releases](https://github.com/qiliu2025/MARK/releases/latest). If you already downloaded the source ZIP, open [DOWNLOAD_MARK.html](DOWNLOAD_MARK.html) for the download links.
 
@@ -48,11 +48,11 @@ Local queries work offline. Downloads use the original providers and require net
 
 Windows 10/11 x64 and Microsoft Edge WebView2 Evergreen Runtime are required. Python and a separate 7-Zip installation are not needed. SFTP sources require Windows OpenSSH Client.
 
-The installation occupies about **10.6 GB** and includes the English PDF user manual and corresponding MARK source archive. Each new installation starts in English and remembers later language choices. Keep `software/` and `knowledge-base/` together.
+The installation occupies about **10.6 GB** and includes the user manual and corresponding MARK source archive. Each new installation starts in English and remembers later language choices. Keep `software/` and `knowledge-base/` together.
 
 ## Documentation
 
-- [User manual (English PDF)]
+- [User manual]
 - [Build instructions](docs/BUILD.md)
 
 ## Licenses
