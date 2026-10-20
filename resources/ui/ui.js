@@ -88,17 +88,18 @@
     if (node.childNodes.length === 1 && node.firstChild.nodeType === 3)
       originalTextNodes.set(node.firstChild, {source:String(value ?? ''),last:text});
   };
-  function translatedFragment(markup) {
-    const template = document.createElement('template');
-    template.innerHTML = String(markup);
-    translateDom(template.content);
-    return template.content;
+  function translatedFragment(node, markup) {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const fragment = range.createContextualFragment(String(markup));
+    translateDom(fragment);
+    return fragment;
   }
   function setHtml(node, markup) {
-    node.replaceChildren(translatedFragment(markup));
+    node.replaceChildren(translatedFragment(node, markup));
   }
   function appendHtml(node, position, markup) {
-    const fragment = translatedFragment(markup);
+    const fragment = translatedFragment(node, markup);
     if (position === 'beforeend') node.append(fragment);
     else if (position === 'afterbegin') node.prepend(fragment);
     else if (position === 'beforebegin') node.before(fragment);
@@ -1145,11 +1146,11 @@
       lines.push(`<path class="geo-reference ${kind}" d="M0,${y.toFixed(3)}H1000"/>`);
     }
     lines.push('<rect class="map-neatline" x="0" y="0" width="1000" height="500"/>');
-    setHtml($('#graticuleLayer'), lines.join(''));
+    $('#graticuleLayer').innerHTML = lines.join('');
   }
 async function loadMap() {
     drawGraticule();
-    setHtml($('#landLayer'), '<rect class="map-water" x="0" y="0" width="1000" height="500"/>');
+    $('#landLayer').innerHTML = '<rect class="map-water" x="0" y="0" width="1000" height="500"/>';
     try {
       const response = await fetch('../ne_50m_admin_0_countries.geojson', {cache:'no-store'});
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1160,10 +1161,10 @@ async function loadMap() {
       const coast = geo.features.filter(feature => feature.properties?.MARK_KIND === 'coastline');
       const borders = geo.features.filter(feature => feature.properties?.MARK_KIND === 'boundary');
       $('#landLayer').innerHTML += land.map(feature => render(feature, 'map-reference-land')).join('');
-      setHtml($('#countryLayer'), coast.map(feature => render(feature, 'map-reference-coast')).join('') + borders.map(feature => {
+      $('#countryLayer').innerHTML = coast.map(feature => render(feature, 'map-reference-coast')).join('') + borders.map(feature => {
         const type = ['international','undetermined','control'].includes(feature.properties.MARK_BOUNDARY_TYPE) ? feature.properties.MARK_BOUNDARY_TYPE : 'undetermined';
         return `<path class="map-reference-border ${type}" data-boundary-type="${type}" data-source-id="${esc(feature.properties.NE_ID)}" d="${geometryPath(feature.geometry)}"></path>`;
-      }).join(''));
+      }).join('');
       const countryDisplayName = (properties, language) => {
         if(['indicator','land','coastline','boundary'].includes(properties.MARK_KIND))return '';
         const prescribed=properties[language==='en'?'MARK_NAME_EN':'MARK_NAME_ZH'];
@@ -1192,9 +1193,9 @@ async function loadMap() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const geo = await response.json();
         const land = geo.features.map(feature => `<path class="map-reference-land" d="${geometryPath(feature.geometry)}"></path>`).join('');
-        setHtml($('#countryLayer'), land);
+        $('#countryLayer').innerHTML = land;
       } catch (_) {
-        setHtml($('#countryLayer'), '<path class="land-shape" d="M65 180L180 90 310 120 330 210 265 260 240 390 190 315 135 285ZM450 115L555 70 650 105 720 95 900 145 920 245 830 285 735 230 665 300 620 425 555 365 530 250 465 215ZM805 350L900 330 950 390 895 445 820 415Z"></path>');
+        $('#countryLayer').innerHTML = '<path class="land-shape" d="M65 180L180 90 310 120 330 210 265 260 240 390 190 315 135 285ZM450 115L555 70 650 105 720 95 900 145 920 245 830 285 735 230 665 300 620 425 555 365 530 250 465 215ZM805 350L900 330 950 390 895 445 820 415Z"></path>';
       }
     }
   }

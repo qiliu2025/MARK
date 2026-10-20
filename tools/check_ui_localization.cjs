@@ -12,6 +12,25 @@ const source=fs.readFileSync(path.join(ui,'ui.js'),'utf8');
 assert(!source.includes('out.split(from).join(to)'),'Fragment translation must not be reintroduced.');
 const instrumented=source.replace('  window.MarkWeatherPreview.install(',`  window.__localeCheck={${names.join(',')}};\n  window.MarkWeatherPreview.install(`);
 assert.notEqual(instrumented,source);
+const mapData=JSON.parse(fs.readFileSync(path.join(resources,'ne_50m_admin_0_countries.geojson'),'utf8'));
+const expectedMap={land:0,coastline:0,boundary:0};
+for(const feature of mapData.features)if(feature.properties?.MARK_KIND in expectedMap)expectedMap[feature.properties.MARK_KIND]++;
+async function checkMap(page){
+ await page.waitForFunction(()=>document.querySelectorAll('#countryLayer .map-reference-border').length>0);
+ const result=await page.evaluate(()=>{
+  const groups={land:[...document.querySelectorAll('#landLayer .map-reference-land')],coastline:[...document.querySelectorAll('#countryLayer .map-reference-coast')],boundary:[...document.querySelectorAll('#countryLayer .map-reference-border')]};
+  const grid=[...document.querySelectorAll('#graticuleLayer path')];
+  const paths=[...Object.values(groups).flat(),...grid];
+  return {counts:Object.fromEntries(Object.entries(groups).map(([key,items])=>[key,items.length])),grid:grid.length,
+   invalid:paths.filter(node=>node.namespaceURI!=='http://www.w3.org/2000/svg'||!(node instanceof SVGPathElement)||!node.getAttribute('d')||!Number.isFinite(node.getTotalLength())||node.getTotalLength()<=0).length,
+   invisible:[...groups.coastline,...groups.boundary,...grid].filter(node=>{const style=getComputedStyle(node);return style.stroke==='none'||Number(style.strokeWidth.replace('px',''))<=0||Number(style.opacity)===0;}).length};
+ });
+ assert.deepEqual(result.counts,expectedMap,'Map layers must retain every source feature.');
+ assert(result.grid>100,'The graticule must be rendered.');
+ assert.equal(result.invalid,0,'Map paths must be drawable SVG elements.');
+ assert.equal(result.invisible,0,'Map lines must have visible strokes.');
+ return result;
+}
 function nativeMessages(){
  const file=path.join(root,'src/MainWindow.cpp'),code=fs.readFileSync(file,'utf8'),rows=[];
  const literals=text=>[...text.matchAll(/(?:L?"(?:\\.|[^"\\])*"\s*)+/g)].map(match=>[...match[0].matchAll(/L?"((?:\\.|[^"\\])*)"/g)].map(value=>value[1]).join(''));
@@ -73,6 +92,7 @@ async function main(){
   let snapshots=0;const failures=[];
   const check=async label=>{failures.push(...await scan(page,label));snapshots++;assert.deepEqual(errors,[],'Application errors');};
   await check('Initial interface');
+  const mapChecks=[await checkMap(page)];
   const messages=nativeMessages();
   const untranslated=await page.evaluate(messages=>messages.map(source=>({source,english:window.__localeCheck.localizeUiText(source)})).filter(row=>/[\u3400-\u9fff]/.test(row.english)),messages);
   assert.deepEqual(untranslated,[],'Native message catalog');
@@ -184,13 +204,14 @@ async function main(){
   }
   for(const language of ['zh','en','zh','en']){
    await page.evaluate(language=>window.__localeCheck.applyLanguage(language),language);
+   mapChecks.push(await checkMap(page));
    if(language==='en')await check('Language switch');
   }
   assert.deepEqual(errors,[],'Application errors');
   const unique=[...new Map(failures.map(row=>[row.id+'|'+row.attr+'|'+row.text,row])).values()];
   if(unique.length)throw new Error('Untranslated application text:\n'+JSON.stringify(unique,null,2));
   const digest=name=>crypto.createHash('sha256').update(fs.readFileSync(path.join(ui,name))).digest('hex');
-  const report={passed:true,rendered_states:snapshots,native_messages:messages.length,labels_titles_placeholders:true,hidden_dialogs:true,fragment_translation_disabled:true,mixed_language_rejected:true,ui_source_sha256:digest('ui.js'),runtime_source_sha256:digest('runtime-log.js')};
+  const report={passed:true,rendered_states:snapshots,native_messages:messages.length,labels_titles_placeholders:true,hidden_dialogs:true,fragment_translation_disabled:true,mixed_language_rejected:true,map_svg_checks:mapChecks.length,map_counts:expectedMap,map_paths_drawable:true,ui_source_sha256:digest('ui.js'),runtime_source_sha256:digest('runtime-log.js')};
   if(process.env.MARK_UI_CHECK_REPORT)fs.writeFileSync(process.env.MARK_UI_CHECK_REPORT,JSON.stringify(report,null,2));
   if(process.env.MARK_UI_CHECK_SCREENSHOT){
    await page.evaluate(()=>{
