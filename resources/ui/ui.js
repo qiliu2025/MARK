@@ -84,6 +84,8 @@
     if (!node) return;
     const text = localizeUiText(value);
     if (node.textContent !== text) node.textContent = text;
+    if (node.childNodes.length === 1 && node.firstChild.nodeType === 3)
+      originalTextNodes.set(node.firstChild, {source:String(value ?? ''),last:text});
   };
   const setText = (selector, value) => setNodeText($(selector), value);
   const setFilterBadge = (selector, count) => {
@@ -273,11 +275,11 @@
   const countryContinents = [
     ['亚洲',new Set('AFG ARM AZE BHR BGD BTN BRN KHM CHN CYP GEO HKG IND IDN IRN IRQ ISR JPN JOR KAZ PRK KOR KWT KGZ LAO LBN MAC MYS MDV MNG MMR NPL OMN PAK PHL QAT SAU SGP LKA SYR TJK THA TLS TKM TUR ARE UZB VNM YEM PSE'.split(' '))],
     ['欧洲',new Set('ALB AND AUT BLR BEL BIH BGR HRV CZE DNK EST FIN FRA DEU GRC VAT HUN ISL IRL ITA LVA LIE LTU LUX MLT MDA MCO MNE NLD MKD NOR POL PRT ROU RUS SMR SRB SVK SVN ESP SWE CHE UKR GBR XKK'.split(' '))],
-    ['非洲',new Set('DZA AGO BEN BWA BFA BDI CPV CMR CAF TCD COM COG COD CIV DJI EGY GNQ ERI SWZ ETH GAB GMB GHA GIN GNB KEN LSO LBR LBY MDG MWI MLI MRT MUS MAR MOZ NAM NER NGA RWA STP SEN SYC SLE SOM ZAF SSD SDN TZA TGO TUN UGA ZMB ZWE ESH SHN'.split(' '))],
+    ['非洲',new Set('ATF DZA AGO BEN BWA BFA BDI CPV CMR CAF TCD COM COG COD CIV DJI EGY GNQ ERI SWZ ETH GAB GMB GHA GIN GNB IOT KEN LSO LBR LBY MDG MWI MLI MRT MUS MYT MAR MOZ NAM NER NGA RWA STP SEN SYC SLE SOM ZAF SSD SDN TZA TGO TUN UGA ZMB ZWE ESH SHN'.split(' '))],
     ['北美洲',new Set('ATG BHS BRB BLZ CAN CRI CUB DMA DOM SLV GRD GTM HTI HND JAM MEX NIC PAN KNA LCA VCT TTO USA ABW AIA BES BMU VGB CYM CUW GLP MTQ MSR PRI SXM TCA VIR GRL SPM MAF'.split(' '))],
-    ['南美洲',new Set('ARG BOL BRA CHL COL ECU GUY PRY PER SUR URY VEN FLK GUF SGS'.split(' '))],
-    ['大洋洲',new Set('AUS FJI KIR MHL FSM NRU NZL PLW PNG WSM SLB TON TUV VUT NCL PYF GUM ASM COK NIU MNP PCN TKL WLF UMI NFK CXR CCK'.split(' '))],
-    ['南极洲',new Set('ATA ATF BVT HMD'.split(' '))]
+    ['南美洲',new Set('BVT ARG BOL BRA CHL COL ECU GUY PRY PER SUR URY VEN FLK GUF SGS'.split(' '))],
+    ['大洋洲',new Set('HMD AUS FJI KIR MHL FSM NRU NZL PLW PNG WSM SLB TON TUV VUT NCL PYF GUM ASM COK NIU MNP PCN TKL WLF UMI NFK CXR CCK'.split(' '))],
+    ['南极洲',new Set('ATA'.split(' '))]
   ];
   function countryContinent(code) {
     const group=countryContinents.find(([,codes])=>codes.has(code));
@@ -325,7 +327,7 @@
       : `${countries} 个国家${regions?` · ${regions} 个地区`:''} · 已选择 ${selected.size} 项${needle?` · 当前显示 ${rows.length} 项`:''}`);
     const groupNames=[...countryContinents.map(([name])=>name),'其他地区'];
     root.innerHTML=groupNames.map(name=>{
-      const items=rows.filter(item=>item.continent===name).sort((a,b)=>name==='南极洲'?(a.code==='ATF'?-1:b.code==='ATF'?1:a.code==='ATA'?-1:b.code==='ATA'?1:0):0);if(!items.length)return '';
+      const items=rows.filter(item=>item.continent===name);if(!items.length)return '';
       const allItems=state.countryOptions.filter(item=>item.continent===name);
       const allSelected=allItems.length>0&&allItems.every(item=>selected.has(item.code));
       const selectLabel=uiPrefs.language==='en'?(allSelected?'Clear continent':'Select all'):(allSelected?'清空本洲':'全选本洲');
@@ -2549,6 +2551,10 @@ async function loadMap() {
 });
   function formatRuntimeEnglish(value) {
     const raw = String(value).trim().replace(/\\u2026/g, '…');
+    const complete = window.GnssRuntimeLog.translateMessage(raw, localizeUiText);
+    if (complete !== null) return complete;
+    const fileResult = /^(\[\d+\/\d+\]\s*[\s\S]+?\s+—\s+)([\s\S]+)$/.exec(raw);
+    if (fileResult) return localizeUiText(fileResult[1].trimEnd()) + ' ' + localizeUiText(fileResult[2]);
     const fileProgress = /^(\[\d+\/\d+\]\s*[^:：]+[:：]\s*)([\s\S]+)$/.exec(raw);
     if (fileProgress) return fileProgress[1] + localizeUiText(fileProgress[2]);
     let transfer = /^(\d{4}-\d{2}-\d{2})[：:]\s*正在从\s+(.+?)\s+下载$/.exec(raw);

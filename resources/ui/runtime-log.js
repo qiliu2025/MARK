@@ -1,5 +1,68 @@
 (function (root) {
   'use strict';
+  // Match complete native messages before applying UI label translations.
+  // Numbered fields retain counts, identifiers and user-supplied values.
+  const messageTemplates = [
+    ['候选范围：{0} / {1} 个测站（{2} 个有坐标）。', 'Candidate scope: {0} / {1} stations ({2} with coordinates).'],
+    ['候选范围：{0} / {1} 个测站（{2} 个有坐标）；已取消范围外 {3} 个选择。', 'Candidate scope: {0} / {1} stations ({2} with coordinates); deselected {3} outside the scope.'],
+    ['候选范围：全部 {0} 个测站。', 'Candidate scope: all {0} stations.'],
+    ['候选范围：请先查询当天测站。', 'Candidate scope: query stations first.'],
+    ['地图框选：在地图内按住左键拖出矩形候选范围。', 'Drag a rectangle on the map to define the candidate scope.'],
+    ['日期筛选：在 {0} 至 {1} 中保留 {2} / {3} 天', 'Date filters: retained {2} / {3} days from {0} to {1}'],
+    ['日期筛选：在 {0} 至 {1} 中保留 {2} / {3} 天。', 'Date filters: retained {2} / {3} days from {0} to {1}.'],
+    ['日期筛选：在 {0} 至 {1} 中保留 {2} / {3} 天（空间天气指标缺失 {4} 天）', 'Date filters: retained {2} / {3} days from {0} to {1} ({4} days lack space-weather records)'],
+    ['{0}保留日期：{1}', '{0} Retained dates: {1}', [0,1]],
+    ['保留日期：无', 'Retained dates: none'],
+    ['保留日期：{0}', 'Retained dates: {0}', [0]],
+    ['日期筛选：起始日期无效。', 'Date filters: the start date is invalid.'],
+    ['日期筛选无法读取空间天气知识库：{0}', 'Date filters cannot read the space-weather index: {0}', [0]],
+    ['{0} 至 {1} · {2}：{3} 个去重测站', '{0} to {1} · {2}: {3} unique stations'],
+    ['{0}（Site Log按观测日期应用设备履历；地图显示 {1} 个，{2} 个日文件因元数据条件被排除）', '{0} (equipment history matched by observation date; {1} mapped, {2} daily files excluded by metadata filters)', [0]],
+    ['已选择 {0} · 候选范围 {1} · 当前列表 {2} · 总计 {3}', 'Selected {0} · In scope {1} · Listed {2} · Total {3}'],
+    ['当前没有可用的本地知识库；红色站网暂不能参与本地查询。', 'No local indexes are available; unavailable networks cannot be queried locally.'],
+    ['解压与 RINEX 转换', 'Extraction and RINEX conversion'],
+    ['只有 {0} 个符合筛选与坐标要求的候选测站，少于目标 {1} 个；原有选择未被替换。', 'Only {0} candidates meet the filters and coordinate requirements, below the target of {1}; the previous selection was retained.'],
+    ['候选池在 {0} 只有 {1} 个已确认可用站、{2} 个待核实站，无法保证每日 {3} 站；原有选择未被替换。', 'On {0}, the candidate pool has {1} confirmed available stations and {2} unverified stations; {3} daily stations cannot be guaranteed. The previous selection was retained.'],
+    ['当前测站集合满足数量、距离与每日可用约束。', 'The station set meets the count, distance and daily availability requirements.'],
+    ['当前测站集合尚未满足全部选站约束。', 'The station set does not meet all selection requirements.'],
+    ['当前日期筛选未保留任何评估日期。', 'The date filters retained no evaluation dates.'],
+    ['选站参数无效：请检查目标数量、时间范围和距离。', 'Invalid station-selection parameters: check the target count, date range and distances.'],
+    ['所选测站中有测站不在当前候选筛选范围内，请重新选站。', 'Some selected stations are outside the current candidate scope. Select stations again.'],
+    ['每日最低可用站数不能大于目标测站数量。', 'The minimum daily available station count cannot exceed the target count.'],
+    ['暂未找到满足目标数量与距离约束的方案；原有选择未被替换。', 'No plan meeting the target count and distance requirements was found; the previous selection was retained.'],
+    ['选站已取消。', 'Station selection cancelled.'],
+    ['Site Log 日期履历筛选已取消。', 'Site Log equipment-history filtering cancelled.'],
+    ['请至少选择一个站网。', 'Select at least one network.'],
+    ['日期范围无效。', 'The date range is invalid.'],
+    ['暂未找到同时满足数量、距离与每日可用约束的方案；可扩大候选范围或调整条件。原有选择未被替换。', 'No plan meeting the count, distance and daily availability requirements was found. Expand the candidate scope or adjust the conditions. The previous selection was retained.'],
+    ['高级筛选候选项读取提示：{0}', 'Advanced-filter choices: {0}', [0]],
+    ['{0} Site Log提示：{1}', '{0} Site Log note: {1}', [0,1]],
+    ['{0}（服务器未提供总大小，请继续等待）', '{0} (the server did not provide a total size; please wait)', [0]]
+  ];
+  const messagePatterns = messageTemplates.map(([source, english, fields = []]) => {
+    const keys = [];
+    const pattern = source.split(/(\{\d+\})/).map(part => {
+      if (/^\{\d+\}$/.test(part)) { keys.push(Number(part.slice(1,-1))); return '([\\s\\S]+?)'; }
+      return part.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s*')
+        .replace(/（/g,'[（(]').replace(/）/g,'[）)]').replace(/：/g,'[:：]');
+    }).join('');
+    return { pattern:new RegExp('^'+pattern.replace(/。$/,'[。.]?')+'$'), english, keys, fields };
+  });
+  function translateMessage(value, translate = text => text) {
+    const raw = String(value).trim();
+    const lines = raw.split(/\s*(?:\r?\n|\s+(?=日期筛选：|保留日期：))\s*/).filter(Boolean);
+    if (lines.length > 1) return lines.map(translate).join(raw.includes('\n') ? '\n' : ' ');
+    for (const {pattern,english,keys,fields} of messagePatterns) {
+      const match = pattern.exec(raw);
+      if (!match) continue;
+      const values = new Map(keys.map((key,index) => [key,match[index+1]]));
+      return english.replace(/\{(\d+)\}/g, (_,key) => {
+        const index=Number(key), text=values.get(index);
+        return fields.includes(index) ? translate(text) : text;
+      });
+    }
+    return null;
+  }
   const diagnosticPhrases = new Map([
     ['尚未完整扫描这一日期范围。', 'This date range is not fully indexed.'],
     ['未收录日期按缺测保守计算，不影响其他站网的查询结果', 'Unindexed dates count as missing; results from other networks are unaffected'],
@@ -157,7 +220,7 @@
     }
     return { consider };
   }
-  const api = { create, translateDiagnostic };
+  const api = { create, translateDiagnostic, translateMessage };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.GnssRuntimeLog = api;
 })(typeof window === 'object' ? window : globalThis);
