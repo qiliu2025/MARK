@@ -50,6 +50,7 @@
   let firstFrameScheduled = false;
   let firstFrameAnnounced = false;
 
+  const uiText = (english, chinese) => uiPrefs.language === 'en' ? english : chinese;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
   const post = (type, payload = {}) => {
@@ -87,6 +88,23 @@
     if (node.childNodes.length === 1 && node.firstChild.nodeType === 3)
       originalTextNodes.set(node.firstChild, {source:String(value ?? ''),last:text});
   };
+  function translatedFragment(markup) {
+    const template = document.createElement('template');
+    template.innerHTML = String(markup);
+    translateDom(template.content);
+    return template.content;
+  }
+  function setHtml(node, markup) {
+    node.replaceChildren(translatedFragment(markup));
+  }
+  function appendHtml(node, position, markup) {
+    const fragment = translatedFragment(markup);
+    if (position === 'beforeend') node.append(fragment);
+    else if (position === 'afterbegin') node.prepend(fragment);
+    else if (position === 'beforebegin') node.before(fragment);
+    else if (position === 'afterend') node.after(fragment);
+    else throw new Error('Unsupported HTML insertion position');
+  }
   const setText = (selector, value) => setNodeText($(selector), value);
   const setFilterBadge = (selector, count) => {
     const node = $(selector); if (!node) return;
@@ -127,9 +145,9 @@
     setText('#infoNoticeCount', state.info.filter(item => item.kind === 'notice').length);
     setText('#infoWarningCount', state.info.filter(item => item.kind === 'warning').length);
     setText('#infoDownloadCount', state.info.filter(item => item.kind === 'download').length);
-    setText('#infoSummary', state.info.length ? `共 ${state.info.length} 条运行信息` : '运行提示、筛选结果和下载状态');
+    setText('#infoSummary', state.info.length ? uiText(`${state.info.length} logs`, `共 ${state.info.length} 条运行信息`) : '运行提示、筛选结果和下载状态');
     const scroll = $('#infoScroll');
-    scroll.innerHTML = rows.length ? rows.map(item => `<div class="info-line ${item.kind}" data-info-id="${item.id}"><time>${esc(item.time)}</time><span class="info-kind">${labels[item.kind] || localizeUiText('提示')}</span><span class="info-message">${esc(runtimeMessageText(item, true))}</span><button type="button" class="info-dismiss" data-info-dismiss="${item.id}" title="${localizeUiText('删除此条信息')}" aria-label="${localizeUiText('删除此条信息')}">×</button></div>`).join('') : `<div class="info-empty">${localizeUiText('当前分类暂无信息')}</div>`;
+    setHtml(scroll, rows.length ? rows.map(item => `<div class="info-line ${item.kind}" data-info-id="${item.id}"><time>${esc(item.time)}</time><span class="info-kind">${labels[item.kind] || localizeUiText('提示')}</span><span class="info-message">${esc(runtimeMessageText(item, true))}</span><button type="button" class="info-dismiss" data-info-dismiss="${item.id}" title="${localizeUiText('删除此条信息')}" aria-label="${localizeUiText('删除此条信息')}">×</button></div>`).join('') : `<div class="info-empty">${localizeUiText('当前分类暂无信息')}</div>`);
     const newest = rows.length ? scroll.lastElementChild : null;
     if (newest) newest.scrollIntoView({ block:'start' });
   }
@@ -139,34 +157,34 @@
     const tags=[];
     if (state.mode === 'precise') {
       const presetSelect=$('#quickPreset'),preset=presetSelect?.selectedOptions?.[0]?.textContent?.trim();
-      if (preset && presetSelect.value!=='none') tags.push(`预设：${preset}`);
-      if (current.preciseStartDate||current.preciseEndDate) tags.push(`日期：${current.preciseStartDate||'—'} 至 ${current.preciseEndDate||'—'} UTC`);
+      if (preset && presetSelect.value!=='none') tags.push(uiText(`Preset: ${preset}`, `预设：${preset}`));
+      if (current.preciseStartDate||current.preciseEndDate) tags.push(uiText(`Dates: ${current.preciseStartDate||'—'} to ${current.preciseEndDate||'—'} UTC`, `日期：${current.preciseStartDate||'—'} 至 ${current.preciseEndDate||'—'} UTC`));
       const family=$('#productFamily')?.selectedOptions?.[0]?.textContent?.trim();
       const latency=$('#preciseLatency')?.selectedOptions?.[0]?.textContent?.trim();
       const center=$('#preciseCenter')?.selectedOptions?.[0]?.textContent?.trim();
-      if (family) tags.push(`产品：${family}`);
-      if (latency && !/全部/.test(latency)) tags.push(`等级：${latency}`);
-      if (center && !/全部/.test(center)) tags.push(`机构：${center}`);
+      if (family) tags.push(uiText(`Product: ${family}`, `产品：${family}`));
+      if (latency && !/^(?:全部|All\b)/i.test(latency)) tags.push(uiText(`Level: ${latency}`, `等级：${latency}`));
+      if (center && !/^(?:全部|All\b)/i.test(center)) tags.push(uiText(`Provider: ${center}`, `机构：${center}`));
       const completenessMode=String(current.preciseCompletenessMode||$('#preciseCompletenessMode')?.value||'ignore');
       if (completenessMode !== 'ignore') {
         const value=current.preciseCompletenessValue ?? $('#preciseCompletenessValue')?.value ?? '';
-        tags.push(`完整性：${value}${completenessMode==='days'?' 天':'%'}`);
+        tags.push(uiText(`Completeness: ${value}${completenessMode==='days'?' days':'%'}`, `完整性：${value}${completenessMode==='days'?' 天':'%'}`));
       }
-      if (String(current.preciseSearch||'').trim()) tags.push(`搜索：${current.preciseSearch}`);
+      if (String(current.preciseSearch||'').trim()) tags.push(uiText(`Search: ${current.preciseSearch}`, `搜索：${current.preciseSearch}`));
       return tags;
     }
     const preset=$('#observationPreset')?.selectedOptions?.[0]?.textContent?.trim();
-    if(preset) tags.push(`预设：${preset}`);
-    if(current.startDate||current.endDate) tags.push(`日期：${current.startDate||'—'} 至 ${current.endDate||'—'} UTC`);
+    if(preset) tags.push(uiText(`Preset: ${preset}`, `预设：${preset}`));
+    if(current.startDate||current.endDate) tags.push(uiText(`Dates: ${current.startDate||'—'} to ${current.endDate||'—'} UTC`, `日期：${current.startDate||'—'} 至 ${current.endDate||'—'} UTC`));
     const networks=Array.isArray(current.networks)?current.networks.filter(item=>item.checked).map(item=>item.name):[];
-    if(networks.length) tags.push(`站网：${networks.length<=3?networks.join('、'):`${networks.length} 个`}`);
+    if(networks.length) tags.push(`站网：${networks.length<=3?networks.join(uiText(', ', '、')):uiText(`${networks.length} networks`, `${networks.length} 个`)}`);
     const country=String(current.country||'').trim();
-    if(country&&country!=='All countries') tags.push(`国家：${country}`);
+    if(country&&country!=='All countries') tags.push(uiText(`Country / region: ${country}`, `国家：${country}`));
     const bounds=[];
-    if(String(current.latMin||'').trim()||String(current.latMax||'').trim()) bounds.push(`纬度 ${current.latMin||'—'}° 至 ${current.latMax||'—'}°`);
-    if(String(current.lonMin||'').trim()||String(current.lonMax||'').trim()) bounds.push(`经度 ${current.lonMin||'—'}° 至 ${current.lonMax||'—'}°`);
-    if(bounds.length) tags.push(bounds.join('，'));
-    if(String(current.filter||'').trim()) tags.push(`搜索：${current.filter}`);
+    if(String(current.latMin||'').trim()||String(current.latMax||'').trim()) bounds.push(uiText(`Latitude ${current.latMin||'—'}° to ${current.latMax||'—'}°`, `纬度 ${current.latMin||'—'}° 至 ${current.latMax||'—'}°`));
+    if(String(current.lonMin||'').trim()||String(current.lonMax||'').trim()) bounds.push(uiText(`Longitude ${current.lonMin||'—'}° to ${current.lonMax||'—'}°`, `经度 ${current.lonMin||'—'}° 至 ${current.lonMax||'—'}°`));
+    if(bounds.length) tags.push(bounds.join(uiText(', ', '，')));
+    if(String(current.filter||'').trim()) tags.push(uiText(`Search: ${current.filter}`, `搜索：${current.filter}`));
     const advanced=current.advanced||{}, dateAdvanced=current.dateAdvanced||{};
     const advancedLabels=[];
     if(advanced.completenessMode&&advanced.completenessMode!=='ignore') advancedLabels.push('完整性');
@@ -174,7 +192,7 @@
     if(advanced.referenceFrame&&advanced.referenceFrame!=='ignore') advancedLabels.push('ITRF/IGS 框架');
     if(advanced.gimStationMode&&advanced.gimStationMode!=='ignore') advancedLabels.push('GIM 测站');
     ['systemsInclude','systemsExclude','receiverInclude','receiverExclude','antennaInclude','antennaExclude','signalCodesInclude','signalCodesExclude'].forEach(key=>{if(String(advanced[key]||'').trim())advancedLabels.push('高级筛选');});
-    if(advancedLabels.length) tags.push(`高级：${[...new Set(advancedLabels)].join('、')}`);
+    if(advancedLabels.length) tags.push(uiText(`Advanced: ${[...new Set(advancedLabels)].map(localizeUiText).join(', ')}`, `高级：${[...new Set(advancedLabels)].join('、')}`));
     if(['kpMode','dstMode','f107Mode'].some(key=>dateAdvanced[key]&&dateAdvanced[key]!=='ignore')) tags.push('空间天气日期筛选');
     return tags;
   }
@@ -183,12 +201,12 @@
     const tags=currentFilterSummary(current);
     const presetSelect=$('#quickPreset');
     const customPresetTag=state.mode==='precise'&&presetSelect?.value.startsWith('custom:')
-      ?`预设：${presetSelect.selectedOptions[0]?.textContent?.trim()}`:null;
-    root.innerHTML=`<b>当前筛选</b>${tags.length?tags.map(tag=>{
+      ?uiText(`Preset: ${presetSelect.selectedOptions[0]?.textContent?.trim()}`, `预设：${presetSelect.selectedOptions[0]?.textContent?.trim()}`):null;
+    setHtml(root, `<b>当前筛选</b>${tags.length?tags.map(tag=>{
       const custom=tag===customPresetTag;
       const text=custom&&uiPrefs.language==='en'?tag.replace(/^预设：/,'Preset: '):tag;
       return `<span class="filter-chip"${custom?' data-no-translate':''}>${esc(text)}</span>`;
-    }).join(''):'<span class="filter-chip muted">未设置额外筛选</span>'}`;
+    }).join(''):'<span class="filter-chip muted">未设置额外筛选</span>'}`);
   }
 
   function setMode(mode, notify = true) {
@@ -211,7 +229,7 @@
     const root = $('#sourceChips');
     if (!networks.length) {
       if (state.sourceChipsSignature !== 'empty') {
-        root.innerHTML = '<button class="source-more" disabled>等待本地索引…</button>';
+        setHtml(root, '<button class="source-more" disabled>等待本地索引…</button>');
         state.sourceChipsSignature = 'empty';
       }
       renderSourcePicker([]);
@@ -223,8 +241,8 @@
     const remaining = networks.length - featured.length;
     const signature = JSON.stringify([remaining, featured.map(source => source.name)]);
     if (signature !== state.sourceChipsSignature) {
-      root.innerHTML = featured.map(source => `<button class="source-chip ${source.checked ? 'checked' : ''} ${source.available ? '' : 'unavailable'}" data-source="${esc(source.name)}" title="${source.available ? '本地知识库可用' : '本地知识库尚未收录'}">${esc(source.name)}</button>`).join('')
-        + (remaining > 0 ? `<button class="source-more" id="openSourcePicker" type="button">更多站网 +${remaining}</button>` : '');
+      setHtml(root, featured.map(source => `<button class="source-chip ${source.checked ? 'checked' : ''} ${source.available ? '' : 'unavailable'}" data-source="${esc(source.name)}" title="${source.available ? '本地知识库可用' : '本地知识库尚未收录'}">${esc(source.name)}</button>`).join('')
+        + (remaining > 0 ? `<button class="source-more" id="openSourcePicker" type="button">${uiText(`More networks +${remaining}`, `更多站网 +${remaining}`)}</button>` : ''));
       state.sourceChipsSignature = signature;
     } else {
       const chips=$$('.source-chip',root);
@@ -248,11 +266,11 @@
     const checked=networks.filter(source=>source.checked).length;
     const selectedAvailable=networks.filter(source=>source.available&&source.checked).length;
     setText('#sourceSelectAvailable',available>0&&selectedAvailable===available?'取消全选所有站网':'全选所有站网');
-    setText('#sourcePickerSummary',`${networks.length} 个数据源 · ${available} 个本地可用 · 已选择 ${checked} 个${needle?` · 当前显示 ${rows.length} 个`:''}`);
+    setText('#sourcePickerSummary',uiText(`${networks.length} sources · ${available} locally available · ${checked} selected${needle?` · ${rows.length} shown`:''}`, `${networks.length} 个数据源 · ${available} 个本地可用 · 已选择 ${checked} 个${needle?` · 当前显示 ${rows.length} 个`:''}`));
     if (!force && $('#sourceLayer').classList.contains('hidden')) return;
     const signature=JSON.stringify([needle,rows.map(source=>source.name)]);
     if (signature !== state.sourcePickerSignature) {
-      root.innerHTML=rows.length?rows.map(source=>`<button class="source-picker-item ${source.checked?'checked':''} ${source.available?'':'unavailable'}" type="button" data-source="${esc(source.name)}"><span class="source-check">✓</span><b title="${esc(source.name)}">${esc(source.name)}</b><em>${esc(localizeUiText(source.available?'可用':'未索引'))}</em></button>`).join(''):'<div class="detail-empty"><span><svg class="ico" aria-hidden="true"><use href="#i-search"></use></svg></span><b>没有匹配的数据源</b><small>请尝试其他站网名称</small></div>';
+      setHtml(root, rows.length?rows.map(source=>`<button class="source-picker-item ${source.checked?'checked':''} ${source.available?'':'unavailable'}" type="button" data-source="${esc(source.name)}"><span class="source-check">✓</span><b title="${esc(source.name)}">${esc(source.name)}</b><em>${esc(localizeUiText(source.available?'可用':'未索引'))}</em></button>`).join(''):'<div class="detail-empty"><span><svg class="ico" aria-hidden="true"><use href="#i-search"></use></svg></span><b>没有匹配的数据源</b><small>请尝试其他站网名称</small></div>');
       state.sourcePickerSignature=signature;
     } else {
       const buttons=$$('.source-picker-item',root);
@@ -297,10 +315,10 @@
   }
   function updateCountryTrigger() {
     const count=state.selectedCountries.length;
-    const label=!count?'全部国家/地区':count<=3?state.selectedCountries.join('、'):`已选择 ${count} 个国家/地区`;
+    const label=!count?'全部国家/地区':count<=3?state.selectedCountries.join(uiText(', ', '、')):uiText(`${count} selected`, `已选择 ${count} 个国家/地区`);
     setText('#countrySelectionLabel',label);
     const trigger=$('#openCountryPicker');
-    if(trigger){trigger.classList.toggle('active',count>0);trigger.title=count?`已选择：${state.selectedCountries.join('、')}`:'未限定国家';}
+    if(trigger){trigger.classList.toggle('active',count>0);trigger.title=count?uiText(`Selected: ${state.selectedCountries.join(', ')}`, `已选择：${state.selectedCountries.join(uiText(', ', '、'))}`):'未限定国家';}
   }
   function renderCountries(countries = []) {
     const signature=JSON.stringify(countries);
@@ -326,13 +344,13 @@
       ? `${countries} countries${regions?` · ${regions} regions`:''} · ${selected.size} selected${needle?` · ${rows.length} shown`:''}`
       : `${countries} 个国家${regions?` · ${regions} 个地区`:''} · 已选择 ${selected.size} 项${needle?` · 当前显示 ${rows.length} 项`:''}`);
     const groupNames=[...countryContinents.map(([name])=>name),'其他地区'];
-    root.innerHTML=groupNames.map(name=>{
+    setHtml(root, groupNames.map(name=>{
       const items=rows.filter(item=>item.continent===name);if(!items.length)return '';
       const allItems=state.countryOptions.filter(item=>item.continent===name);
       const allSelected=allItems.length>0&&allItems.every(item=>selected.has(item.code));
       const selectLabel=uiPrefs.language==='en'?(allSelected?'Clear continent':'Select all'):(allSelected?'清空本洲':'全选本洲');
       return `<section class="country-continent"><header><b>${name}</b><span>${items.length}</span><button class="country-continent-select" type="button" data-continent-select="${esc(name)}">${selectLabel}</button></header><div class="country-option-grid">${items.map(item=>`<button class="country-option ${selected.has(item.code)?'checked':''}" type="button" data-country-code="${item.code}" title="${esc(fullCountryName(item.code))}">${countryOptionFlag(item)}<span class="country-option-label"><b>${item.code}</b><small>${esc(fullCountryName(item.code))}</small></span><span class="country-option-check">✓</span></button>`).join('')}</div></section>`;
-    }).join('')||'<div class="detail-empty"><span><svg class="ico" aria-hidden="true"><use href="#i-search"></use></svg></span><b>没有匹配的国家/地区</b><small>请输入名称或 ISO 三字母地区代码</small></div>';
+    }).join('')||'<div class="detail-empty"><span><svg class="ico" aria-hidden="true"><use href="#i-search"></use></svg></span><b>没有匹配的国家/地区</b><small>请输入名称或 ISO 三字母地区代码</small></div>');
   }
   function openCountrySettings() {
     state.pendingCountries=[...state.selectedCountries];state.countryNeedle='';setValue('#countrySearch','');renderCountryPicker();
@@ -473,23 +491,23 @@
     const body = $('#stationRows');
     if (!rows.length) {
       const columnCount = $('#stationTable').tHead.rows[0].cells.length;
-      body.innerHTML = `<tr class="placeholder-row"><td colspan="${columnCount}"><div class="empty-table"><span><svg class="ico" aria-hidden="true"><use href="#i-search"></use></svg></span><b>暂无测站结果</b><small>查询后，结果会在这里显示且可独立滚动</small></div></td></tr>`;
+      setHtml(body, `<tr class="placeholder-row"><td colspan="${columnCount}"><div class="empty-table"><span><svg class="ico" aria-hidden="true"><use href="#i-search"></use></svg></span><b>暂无测站结果</b><small>查询后，结果会在这里显示且可独立滚动</small></div></td></tr>`);
       return;
     }
-    body.innerHTML = rows.map(row => {
+    setHtml(body, rows.map(row => {
       const klass = statusClass(row.status, row.percent);
       const status = /pending|unverified|待核实/i.test(row.status)
         ? (uiPrefs.language === 'en' ? 'Unverified' : '待核实')
         : klass === 'missing' ? '不可用' : klass === 'partial' ? '部分可用' : '可用';
       return `<tr data-station="${esc(row.id)}" class="${row.selected ? 'is-selected' : ''}" tabindex="0" title="${esc(localizeUiText('单击查看测站详情'))}">
-        <td class="check-col"><button class="row-check ${row.selected ? 'checked' : ''}" data-check="${esc(row.id)}" aria-label="${row.selected ? '取消选择' : '选择'}测站 ${esc(row.id)}" aria-pressed="${row.selected ? 'true' : 'false'}"></button></td>
+        <td class="check-col"><button class="row-check ${row.selected ? 'checked' : ''}" data-check="${esc(row.id)}" aria-label="${esc(uiText(`${row.selected ? 'Deselect' : 'Select'} station ${row.id}`, `${row.selected ? '取消选择' : '选择'}测站 ${row.id}`))}" aria-pressed="${row.selected ? 'true' : 'false'}"></button></td>
         <td data-col="station" class="station-code" title="" data-full-text="${esc(row.id)}">${esc(row.id)}</td><td data-col="network" title="" data-full-text="${esc(row.network)}">${esc(row.network)}</td>
         <td data-col="country"><span class="country-cell" title="${esc(stationRecordedCountryName(row.area||row.country))}">${countryFlag(row)}${esc(window.MarkCountries.flagLabelCode(row.area||row.country))}</span></td><td data-col="format" title="" data-full-text="${esc(row.format)}">${esc(row.format)}</td><td data-col="interval" title="" data-full-text="${esc(row.interval)}">${esc(row.interval)}</td>
         <td data-col="system" title="" data-full-text="${esc(row.system)}">${esc(row.system)}</td><td data-col="receiver" title="" data-full-text="${esc(row.receiver)}">${esc(row.receiver)}</td><td data-col="antenna" title="" data-full-text="${esc(row.antenna)}">${esc(row.antenna)}</td><td data-col="radome" title="" data-full-text="${esc(row.radome)}">${esc(row.radome)}</td>
         <td data-col="availability" title="" data-full-text="${esc(observationCoverageLabel(row.coverage))}"><span class="availability ${klass}"><span class="availability-track"><i style="width:${row.percent}%"></i></span>${observationCoverageMarkup(row.coverage)}</span></td><td data-col="status" title="" data-full-text="${esc(localizeUiText(status))}"><span class="status-pill ${klass}">${esc(localizeUiText(status))}</span></td>
-        <td class="action-col"><button class="row-more" data-row-menu="${esc(row.id)}" title="测站操作" aria-label="${esc(row.id)} 操作"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis"></use></svg></button></td>
+        <td class="action-col"><button class="row-more" data-row-menu="${esc(row.id)}" title="测站操作" aria-label="${esc(uiText(`Actions for ${row.id}`, `${row.id} 操作`))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis"></use></svg></button></td>
       </tr>`;
-    }).join('');
+    }).join(''));
     applyColumnVisibility();
   }
 
@@ -544,7 +562,7 @@
     state.stationDetailData=message;
     const row=findObservation(state.detailStation);
     if(!row)return;
-    $('#stationDetailBody').innerHTML=stationDetailMarkup(row);
+    setHtml($('#stationDetailBody'), stationDetailMarkup(row));
     renderCoverage($('#stationDateCoverage'),message.coverage);
   }
   function handleProductCoverage(message) {
@@ -560,11 +578,11 @@
     const target = $('#updInputsInfo');
     if (!target) return;
     if (!info) {
-      target.innerHTML = `<p class="coverage-note">${esc(localizeUiText('未收录 UPD 配套文件声明'))}</p>`;
+      setHtml(target, `<p class="coverage-note">${esc(localizeUiText('未收录 UPD 配套文件声明'))}</p>`);
       return;
     }
-    target.innerHTML = `<span>${esc(localizeUiText('UPD 文件头声明的配套产品'))}</span><p class="coverage-note">${esc(localizeUiText('所选范围内最新记录'))}: ${esc(info.date)}</p><b data-no-translate>${esc(info.fileName)}</b>`
-      + (info.inputs || []).map(input => `<div class="clk-antex-group"><small data-no-translate>${esc(input.type)}</small><b data-no-translate title="${esc(input.fileName)}">${esc(input.fileName || '—')}</b></div>`).join('');
+    setHtml(target, `<span>${esc(localizeUiText('UPD 文件头声明的配套产品'))}</span><p class="coverage-note">${esc(localizeUiText('所选范围内最新记录'))}: ${esc(info.date)}</p><b data-no-translate>${esc(info.fileName)}</b>`
+      + (info.inputs || []).map(input => `<div class="clk-antex-group"><small data-no-translate>${esc(input.type)}</small><b data-no-translate title="${esc(input.fileName)}">${esc(input.fileName || '—')}</b></div>`).join(''));
   }
 
   function fullCountryName(value, area) {
@@ -586,17 +604,17 @@
   }
   function renderClkAntex(info) {
     const target=$('#clkAntexInfo');if(!target)return;
-    if(!info){target.innerHTML='<p class="coverage-note">'+esc(localizeUiText('CLK 头信息尚未接入'))+'</p>';return;}
+    if(!info){setHtml(target, '<p class="coverage-note">'+esc(localizeUiText('CLK 头信息尚未接入'))+'</p>');return;}
     const labels={exact:'已声明文件',model_only:'仅声明模型',undeclared:'完整头未声明 ANTEX',failed:'头读取失败',retryable:'头读取待重试',unscanned:'尚未扫描'};
     const counts=Object.entries(info.counts||{}).map(([k,v])=>`${localizeUiText(labels[k]||k)} ${v} ${localizeUiText('天')}`).join(' · ');
     const note='按 CLK 文件头和注释收录；仅声明模型时无法确认历史文件版本。当前别名的内容可能随更新改变。';
-    target.innerHTML=`<span>${esc(localizeUiText('CLK 使用的 ANTEX'))}</span>${info.error?`<p class="coverage-note">${esc(localizeUiText(info.error))}</p>`:''}<p class="coverage-note">${esc(counts)}</p><p class="coverage-note">${esc(localizeUiText(note))}</p>`+(info.groups||[]).map(g=>{
+    setHtml(target, `<span>${esc(localizeUiText('CLK 使用的 ANTEX'))}</span>${info.error?`<p class="coverage-note">${esc(localizeUiText(info.error))}</p>`:''}<p class="coverage-note">${esc(counts)}</p><p class="coverage-note">${esc(localizeUiText(note))}</p>`+(info.groups||[]).map(g=>{
       const declarations=[...new Map((g.declarations||[]).map(d=>[`${d.system}|${d.model}|${d.exact}|${d.kind}`,d])).values()];
       const models=declarations.map(d=>`<b data-no-translate>${esc(d.model)}</b><small>${esc(d.system||'—')} · ${esc(localizeUiText(d.kind==='sys_pcvs_applied'?'SYS / PCVS APPLIED 声明':'CLK 注释中的引用'))} · ${esc(localizeUiText(d.exact?'文件名声明':'模型声明，版本未确认'))}</small>`).join('')||`<b>${esc(localizeUiText(labels[g.status]||g.status))}</b>`;
       const ranges=g.ranges||[];
       const rangeText=ranges.map(([a,b])=>a===b?a:`${a} — ${b}`).join('；');
       return `<div class="clk-antex-group">${models}<details><summary>${esc(localizeUiText('展开查看'))} · ${ranges.length} ${esc(localizeUiText('日期区间'))}</summary><p data-no-translate>${esc(rangeText)}</p></details></div>`;
-    }).join('');
+    }).join(''));
   }
 
   function stationDetailMarkup(row) {
@@ -613,8 +631,8 @@
     if (!row) return;
     state.detailStation = row.id;state.stationDetailRevision=state.latest.stationRevision;
     requestStationDetail();
-    $('#stationDetailTitle').textContent = `${row.id} 测站详情`;
-    $('#stationDetailBody').innerHTML = stationDetailMarkup(row);
+    $('#stationDetailTitle').textContent = uiText(`${row.id} station details`, `${row.id} 测站详情`);
+    setHtml($('#stationDetailBody'), stationDetailMarkup(row));
     $('#detailToggleSelection').textContent = row.selected ? '取消选择' : '选择测站';
     $('#detailLocate').disabled = !row.hasCoordinate;
     const layer = $('#stationDetailLayer');
@@ -659,14 +677,14 @@
     state.focusedMapStation = row.id;
     applyMapTransform();
     $('#mapCard').scrollIntoView({behavior:'smooth',block:'center'});
-    toast(`已定位 ${row.id} 测站`);
+    toast(uiText(`Located station ${row.id}`, `已定位 ${row.id} 测站`));
   }
 
   async function copyStation(row) {
     if (!row) return;
     const coordinates = row.hasCoordinate ? `${row.lat.toFixed(5)}, ${row.lon.toFixed(5)}` : '暂无';
-    const text = [`测站：${row.id}`,`地图归属：${stationCountryName(row.country,row.area)}`,`站网：${row.network}`,`格式：${row.format}`,`采样率：${row.interval}`,`系统：${row.system}`,`接收机：${row.receiver}`,`天线：${row.antenna}`,`天线罩：${row.radome}`,`数据源：${row.sources}`,`范围完整性：${row.coverage}`,`坐标：${coordinates}`].join('\n');
-    try { await navigator.clipboard.writeText(text); toast(`${row.id} 测站信息已复制`); }
+    const text = [uiText(`Station: ${row.id}`, `测站：${row.id}`),uiText(`Country / region: ${stationCountryName(row.country,row.area)}`, `地图归属：${stationCountryName(row.country,row.area)}`),uiText(`Network: ${row.network}`, `站网：${row.network}`),uiText(`Format: ${row.format}`, `格式：${row.format}`),uiText(`Interval: ${row.interval}`, `采样率：${row.interval}`),uiText(`System: ${row.system}`, `系统：${row.system}`),uiText(`Receiver: ${row.receiver}`, `接收机：${row.receiver}`),uiText(`Antenna: ${row.antenna}`, `天线：${row.antenna}`),uiText(`Radome: ${row.radome}`, `天线罩：${row.radome}`),uiText(`Sources: ${row.sources}`, `数据源：${row.sources}`),uiText(`Qualified data coverage: ${row.coverage}`, `范围完整性：${row.coverage}`),uiText(`Coordinates: ${coordinates}`, `坐标：${coordinates}`)].join('\n');
+    try { await navigator.clipboard.writeText(text); toast(uiText(`${row.id} station information copied`, `${row.id} 测站信息已复制`)); }
     catch (_) { toast('当前环境无法访问剪贴板'); }
   }
 
@@ -758,17 +776,17 @@
     $('#precisePreviousRows').disabled = offset === 0;
     $('#preciseNextRows').disabled = end >= rows.length;
     if (!rows.length) {
-      body.innerHTML = '<tr class="placeholder-row"><td colspan="9"><div class="empty-table"><span><svg class="ico ico-lg" aria-hidden="true"><use href="#i-cube"></use></svg></span><b>暂无产品结果</b><small>选择日期与筛选条件后查询</small></div></td></tr>';
+      setHtml(body, '<tr class="placeholder-row"><td colspan="9"><div class="empty-table"><span><svg class="ico ico-lg" aria-hidden="true"><use href="#i-cube"></use></svg></span><b>暂无产品结果</b><small>选择日期与筛选条件后查询</small></div></td></tr>');
       return;
     }
-    body.innerHTML = rows.slice(offset, end).map(({product,index}) => {
+    setHtml(body, rows.slice(offset, end).map(({product,index}) => {
       const pct = clamp(Number(product.completeness) || 0,0,100);
       const klass = pct >= 99 ? '' : pct > 0 ? 'partial' : 'missing';
       const availability = product.availability || `${pct}%`;
       const access = preciseAccess(product,pct);
       const range = preciseRangeLabel(availability,pct);
-      return `<tr data-product-index="${index}" class="${product.selected ? 'is-selected' : ''}"><td class="check-col"><button class="row-check ${product.selected ? 'checked' : ''}" data-product-check="${index}" aria-label="${product.selected ? '取消选择' : '选择'}产品 ${esc(product.id)}" aria-pressed="${product.selected ? 'true' : 'false'}"></button></td><td class="station-code" title="${esc(localizeUiText(product.name || product.id))}">${esc(product.id)}</td><td>${esc(preciseProductTypeLabel(product.family))}</td><td>${esc(product.center)}</td><td>${esc(sinexPeriodLabel(product) || product.latency || '—')}</td><td>${esc(preciseSatelliteSystems(product))}</td><td>${esc(product.interval || '—')}</td><td class="product-access-cell"><span class="status-pill ${access.klass}" title="${esc(localizeUiText(access.detail))}">${esc(localizeUiText(access.label))}</span></td><td class="product-availability-cell" title="${esc(availability)}"><span class="availability ${klass}"><span class="availability-track"><i style="width:${pct}%"></i></span><span class="availability-copy"><b>${esc(range.range)}</b>${range.percent ? `<small>${esc(range.percent)}</small>` : ''}</span></span></td></tr>`;
-    }).join('');
+      return `<tr data-product-index="${index}" class="${product.selected ? 'is-selected' : ''}"><td class="check-col"><button class="row-check ${product.selected ? 'checked' : ''}" data-product-check="${index}" aria-label="${esc(uiText(`${product.selected ? 'Deselect' : 'Select'} product ${product.id}`, `${product.selected ? '取消选择' : '选择'}产品 ${product.id}`))}" aria-pressed="${product.selected ? 'true' : 'false'}"></button></td><td class="station-code" title="${esc(localizeUiText(product.name || product.id))}">${esc(product.id)}</td><td>${esc(preciseProductTypeLabel(product.family))}</td><td>${esc(product.center)}</td><td>${esc(sinexPeriodLabel(product) || product.latency || '—')}</td><td>${esc(preciseSatelliteSystems(product))}</td><td>${esc(product.interval || '—')}</td><td class="product-access-cell"><span class="status-pill ${access.klass}" title="${esc(localizeUiText(access.detail))}">${esc(localizeUiText(access.label))}</span></td><td class="product-availability-cell" title="${esc(availability)}"><span class="availability ${klass}"><span class="availability-track"><i style="width:${pct}%"></i></span><span class="availability-copy"><b>${esc(range.range)}</b>${range.percent ? `<small>${esc(range.percent)}</small>` : ''}</span></span></td></tr>`;
+    }).join(''));
   }
 
   function showProductDetail(product) {
@@ -785,7 +803,7 @@
     const statusSummary = preciseStatusSummary(product,access.detail);
     const updFields = /^UPD/.test(product.family) ? `<div class="detail-field wide" id="updInputsInfo"><span>${esc(localizeUiText('UPD 文件头声明的配套产品'))}</span></div>` : '';
     const intervalField=product.formatVersion?`<div class="detail-field"><span>格式版本</span><b>${esc(product.formatVersion)}</b></div>`:`<div class="detail-field"><span>采样间隔</span><b>${esc(product.interval || '—')}</b></div>`;
-    $('#productDetail').innerHTML = `<div class="detail-id">${esc(product.id)}</div>${product.name ? `<p class="detail-name">${esc(localizeUiText(product.name))}</p>` : ''}<section class="product-info"><div class="detail-grid"><div class="detail-field"><span>产品类型</span><b>${esc(preciseProductTypeLabel(product.family))}</b></div><div class="detail-field"><span>分析中心</span><b>${esc(preciseCenterFullName(product.center))}</b></div><div class="detail-field"><span>${esc(localizeUiText(product.solutionClass?'发布等级':'产品等级'))}</span><b>${esc(product.latency || '—')}</b></div>${product.solutionClass?`<div class="detail-field"><span>解算周期</span><b>${esc(sinexPeriodLabel(product))}</b></div>`:''}<div class="detail-field"><span>卫星系统</span><b>${esc(preciseSatelliteSystems(product))}</b></div>${intervalField}<div class="detail-field"><span>获取方式</span><b>${esc(localizeUiText(access.label))}</b></div><div class="detail-field wide"><span>${esc(localizeUiText(product.localInventoryOnly ? '本地记录覆盖率' : '范围完整性'))}</span><b>${esc(product.availability || `${pct}%`)}</b><div class="detail-progress"><i style="width:${pct}%"></i></div><div id="productDateCoverage" class="coverage-compact-slot"><p class="coverage-note">${esc(localizeUiText('正在读取日期覆盖…'))}</p></div><p id="productCoverageNote" class="coverage-note"></p></div>${resolvedFields}${updFields}${/^CLK/.test(product.family)?`<div class="detail-field wide clk-antex-info" id="clkAntexInfo"><span>CLK 使用的 ANTEX</span><p class="coverage-note">正在读取 CLK 头信息…</p></div>`:''}<div class="detail-field wide"><span>索引说明</span><b>${esc(localizeUiText(statusSummary))}</b></div></div></section>`;
+    setHtml($('#productDetail'), `<div class="detail-id">${esc(product.id)}</div>${product.name ? `<p class="detail-name">${esc(localizeUiText(product.name))}</p>` : ''}<section class="product-info"><div class="detail-grid"><div class="detail-field"><span>产品类型</span><b>${esc(preciseProductTypeLabel(product.family))}</b></div><div class="detail-field"><span>分析中心</span><b>${esc(preciseCenterFullName(product.center))}</b></div><div class="detail-field"><span>${esc(localizeUiText(product.solutionClass?'发布等级':'产品等级'))}</span><b>${esc(product.latency || '—')}</b></div>${product.solutionClass?`<div class="detail-field"><span>解算周期</span><b>${esc(sinexPeriodLabel(product))}</b></div>`:''}<div class="detail-field"><span>卫星系统</span><b>${esc(preciseSatelliteSystems(product))}</b></div>${intervalField}<div class="detail-field"><span>获取方式</span><b>${esc(localizeUiText(access.label))}</b></div><div class="detail-field wide"><span>${esc(localizeUiText(product.localInventoryOnly ? '本地记录覆盖率' : '范围完整性'))}</span><b>${esc(product.availability || `${pct}%`)}</b><div class="detail-progress"><i style="width:${pct}%"></i></div><div id="productDateCoverage" class="coverage-compact-slot"><p class="coverage-note">${esc(localizeUiText('正在读取日期覆盖…'))}</p></div><p id="productCoverageNote" class="coverage-note"></p></div>${resolvedFields}${updFields}${/^CLK/.test(product.family)?`<div class="detail-field wide clk-antex-info" id="clkAntexInfo"><span>CLK 使用的 ANTEX</span><p class="coverage-note">正在读取 CLK 头信息…</p></div>`:''}<div class="detail-field wide"><span>索引说明</span><b>${esc(localizeUiText(statusSummary))}</b></div></div></section>`);
     post('product-coverage',{product:product.id,family:product.family,request:state.productCoverageRequest});
   }
 
@@ -827,7 +845,7 @@
     if (current.selectionCount !== undefined) setValue('#selectionCount', current.selectionCount);
     if (current.minDistance !== undefined) setValue('#minimumDistance', current.minDistance);
     if (current.maxNeighbor !== undefined) setValue('#maximumNeighbor', current.maxNeighbor);
-    setText('#sourceSummary', `${current.sources || 0}/${(current.networks || []).length || 0} 已选择 · ${current.availableSources || 0} 个本地可用`);
+    setText('#sourceSummary', uiText(`${current.sources || 0}/${(current.networks || []).length || 0} selected · ${current.availableSources || 0} locally available`, `${current.sources || 0}/${(current.networks || []).length || 0} 已选择 · ${current.availableSources || 0} 个本地可用`));
     const advanced=current.advanced||{}, dateAdvanced=current.dateAdvanced||{};
     const qualityModes=['observationCompletenessMode','latencyMode','positionTimeSeriesMode','residualsMode','multipathMode','cycleSlipsMode'];
     const qualityActive=qualityModes.some(key=>advanced[key]&&advanced[key]!=='ignore');
@@ -847,11 +865,11 @@
     setValue('#startDate', current.startDate || ''); setValue('#endDate', current.endDate || '');
     setValue('#latMin', current.latMin || ''); setValue('#latMax', current.latMax || ''); setValue('#lonMin', current.lonMin || ''); setValue('#lonMax', current.lonMax || '');
     const hasBounds = [current.latMin,current.latMax,current.lonMin,current.lonMax].some(value => String(value || '').trim());
-    const countryScope = state.selectedCountries.length ? (state.selectedCountries.length<=3?state.selectedCountries.join('、'):`${state.selectedCountries.length} 个国家/地区`) : '';
+    const countryScope = state.selectedCountries.length ? (state.selectedCountries.length<=3?state.selectedCountries.join(uiText(', ', '、')):uiText(`${state.selectedCountries.length} countries / regions`, `${state.selectedCountries.length} 个国家/地区`)) : '';
     const inScope = hasBounds || Boolean(countryScope);
-    const scopeText = hasBounds ? '自定义经纬度范围' : countryScope || '全球范围';
-    setText('#scopeHint', inScope ? `已应用${scopeText}` : '默认全球范围'); setText('#mapScope', scopeText);
-    setText('#selectedBadge', `${current.selected || 0} 已选择`);
+    const scopeText = hasBounds ? localizeUiText('自定义经纬度范围') : countryScope || localizeUiText('全球范围');
+    setText('#scopeHint', inScope ? uiText(`Applied: ${scopeText}`, `已应用${scopeText}`) : '默认全球范围'); setText('#mapScope', scopeText);
+    setText('#selectedBadge', uiText(`${current.selected || 0} selected`, `${current.selected || 0} 已选择`));
     $('#addObservationPlan').disabled = Number(current.selected || 0) <= 0;
     setText('#mapSelectedCount', current.selected || 0);
     const rowOffset = Number(current.rowOffset || 0), rowTotal = Number(current.rowTotal ?? current.visible ?? 0);
@@ -863,14 +881,14 @@
       : '尚未查询');
     setText('#rowRange', rowTotal ? `${rowOffset + 1}–${rowEnd} / ${rowTotal}` : '0–0');
     $('#previousRows').disabled = rowOffset <= 0; $('#nextRows').disabled = rowEnd >= rowTotal;
-    setText('#mapSubtitle', current.stations ? `${current.visible || 0} 个测站满足当前条件` : '查询后显示满足条件的测站');
+    setText('#mapSubtitle', current.stations ? uiText(`${current.visible || 0} stations match the current conditions`, `${current.visible || 0} 个测站满足当前条件`) : '查询后显示满足条件的测站');
     renderObservationRows(); if (mapChanged || mapSelectionChanged) renderMapPoints();
     if (state.detailStation) {
       const detail = findObservation(state.detailStation);
       if (detail) {
         if(current.stationRevision!==state.stationDetailRevision) {
           state.stationDetailRevision=current.stationRevision;
-          $('#stationDetailBody').innerHTML=stationDetailMarkup(detail);requestStationDetail();
+          setHtml($('#stationDetailBody'), stationDetailMarkup(detail));requestStationDetail();
         }
         $('#detailToggleSelection').textContent = detail.selected ? '取消选择' : '选择测站';
       } else closeStationDetail();
@@ -891,16 +909,16 @@
     setValue('#preciseStartDate', current.preciseStartDate || ''); setValue('#preciseEndDate', current.preciseEndDate || ''); setValue('#preciseSearch', current.preciseSearch || '');
     if (current.preciseFamily !== undefined) setValue('#productFamily', familyValues[Number(current.preciseFamily)] || 'all');
     updateProductLevelOptions();setSelectedIndex('#preciseLatency', current.preciseLatency); setSelectedIndex('#preciseCenter', current.preciseCenter); setValue('#preciseCompletenessMode',current.preciseCompletenessMode||'ignore');setValue('#preciseCompletenessValue',current.preciseCompletenessValue??0);updatePreciseCompletenessInput();if(!$('#quickPreset').value.startsWith('custom:'))setSelectedIndex('#quickPreset', current.preciseQuickPreset);
-    setText('#preciseSelectedBadge', `${current.preciseSelected || 0} 已选择`);
+    setText('#preciseSelectedBadge', uiText(`${current.preciseSelected || 0} selected`, `${current.preciseSelected || 0} 已选择`));
     $('#addPrecisePlan').disabled = !state.preciseRows.some(product => product.selected && !product.localInventoryOnly && Number(product.availableDays) > 0);
-    setText('#preciseResultSummary', `${state.preciseRows.length} 个产品`);
+    setText('#preciseResultSummary', uiText(`${state.preciseRows.length} products`, `${state.preciseRows.length} 个产品`));
     renderPreciseRows();
     if(state.detailProduct && (changed||!state.preciseRows.some(p=>p.id===state.detailProduct&&p.family===state.detailProductFamily))) {
       const currentProduct=state.preciseRows.find(product=>product.id===state.detailProduct&&product.family===state.detailProductFamily);
       if(currentProduct) showProductDetail(currentProduct);
       else {
         state.detailProduct=null;state.detailProductFamily=null;state.productCoverage=null;state.productCoverageRequest='';
-        $('#productDetail').innerHTML=`<div class="detail-empty"><b>${esc(localizeUiText('尚未选择产品'))}</b></div>`;
+        setHtml($('#productDetail'), `<div class="detail-empty"><b>${esc(localizeUiText('尚未选择产品'))}</b></div>`);
       }
     }
   }
@@ -961,7 +979,7 @@
       const scrollTop = root.scrollTop;
       state.planSignature = signature;
       const statusText = { pending: '待下载', running: '下载中', done: '已完成', failed: '失败', cancelled: '已取消' };
-      root.innerHTML = visible.length ? visible.map(item => {
+      setHtml(root, visible.length ? visible.map(item => {
         const percent = clamp(Number(item.percent) || 0, 0, 100);
         const range = item.range ? `${esc(item.range)} · ` : '';
         return `<div class="download-plan-item" data-plan-id="${esc(item.id)}" data-status="${esc(item.status)}">
@@ -971,9 +989,9 @@
           <div class="download-plan-item-progress"><i style="width:${percent}%"></i></div></div>
           <div class="download-plan-item-actions">
           <button type="button" data-plan-action="remove">${esc(localizeUiText('移除'))}</button></div></div>`;
-      }).join('') : `<div class="download-plan-empty">${esc(localizeUiText('从查询结果中选择内容，然后点击“添加下载计划”'))}</div>`;
+      }).join('') : `<div class="download-plan-empty">${esc(localizeUiText('从查询结果中选择内容，然后点击“添加下载计划”'))}</div>`);
       if (visible.length < queue.length) {
-        root.insertAdjacentHTML('beforeend', `<button class="btn soft download-plan-more" type="button" id="downloadPlanMore">${esc(localizeUiText('显示更多'))} (${queue.length - visible.length})</button>`);
+        appendHtml(root, 'beforeend', `<button class="btn soft download-plan-more" type="button" id="downloadPlanMore">${esc(localizeUiText('显示更多'))} (${queue.length - visible.length})</button>`);
       }
       root.scrollTop = scrollTop;
     } else {
@@ -1018,7 +1036,7 @@
     // Keep the dock summary short; the plan and tooltip show the full item ID.
     const selectionText = active
       ? (uiPrefs.language === 'en' ? `${paused ? 'Paused' : 'Downloading'} · ${running.length} active${selected ? ` · ${selected} waiting` : ''}` : `${paused ? '已暂停' : '下载中'} · ${running.length} 项进行中${selected ? ` · ${selected} 项等待` : ''}`)
-      : selected ? `已选 ${selected} ${precise ? '个产品' : '个测站'}` : '下载计划为空';
+      : selected ? uiText(`${selected} ${precise ? 'products' : 'stations'} selected`, `已选 ${selected} ${precise ? '个产品' : '个测站'}`) : '下载计划为空';
     setText('#downloadSelection', selectionText);
     const badge = $('#downloadPlanBadge');
     const outstanding = queue.filter(item => item.status === 'pending' || item.status === 'running').length;
@@ -1127,11 +1145,11 @@
       lines.push(`<path class="geo-reference ${kind}" d="M0,${y.toFixed(3)}H1000"/>`);
     }
     lines.push('<rect class="map-neatline" x="0" y="0" width="1000" height="500"/>');
-    $('#graticuleLayer').innerHTML = lines.join('');
+    setHtml($('#graticuleLayer'), lines.join(''));
   }
 async function loadMap() {
     drawGraticule();
-    $('#landLayer').innerHTML = '<rect class="map-water" x="0" y="0" width="1000" height="500"/>';
+    setHtml($('#landLayer'), '<rect class="map-water" x="0" y="0" width="1000" height="500"/>');
     try {
       const response = await fetch('../ne_50m_admin_0_countries.geojson', {cache:'no-store'});
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -1142,10 +1160,10 @@ async function loadMap() {
       const coast = geo.features.filter(feature => feature.properties?.MARK_KIND === 'coastline');
       const borders = geo.features.filter(feature => feature.properties?.MARK_KIND === 'boundary');
       $('#landLayer').innerHTML += land.map(feature => render(feature, 'map-reference-land')).join('');
-      $('#countryLayer').innerHTML = coast.map(feature => render(feature, 'map-reference-coast')).join('') + borders.map(feature => {
+      setHtml($('#countryLayer'), coast.map(feature => render(feature, 'map-reference-coast')).join('') + borders.map(feature => {
         const type = ['international','undetermined','control'].includes(feature.properties.MARK_BOUNDARY_TYPE) ? feature.properties.MARK_BOUNDARY_TYPE : 'undetermined';
         return `<path class="map-reference-border ${type}" data-boundary-type="${type}" data-source-id="${esc(feature.properties.NE_ID)}" d="${geometryPath(feature.geometry)}"></path>`;
-      }).join('');
+      }).join(''));
       const countryDisplayName = (properties, language) => {
         if(['indicator','land','coastline','boundary'].includes(properties.MARK_KIND))return '';
         const prescribed=properties[language==='en'?'MARK_NAME_EN':'MARK_NAME_ZH'];
@@ -1174,9 +1192,9 @@ async function loadMap() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const geo = await response.json();
         const land = geo.features.map(feature => `<path class="map-reference-land" d="${geometryPath(feature.geometry)}"></path>`).join('');
-        $('#countryLayer').innerHTML = land;
+        setHtml($('#countryLayer'), land);
       } catch (_) {
-        $('#countryLayer').innerHTML = '<path class="land-shape" d="M65 180L180 90 310 120 330 210 265 260 240 390 190 315 135 285ZM450 115L555 70 650 105 720 95 900 145 920 245 830 285 735 230 665 300 620 425 555 365 530 250 465 215ZM805 350L900 330 950 390 895 445 820 415Z"></path>';
+        setHtml($('#countryLayer'), '<path class="land-shape" d="M65 180L180 90 310 120 330 210 265 260 240 390 190 315 135 285ZM450 115L555 70 650 105 720 95 900 145 920 245 830 285 735 230 665 300 620 425 555 365 530 250 465 215ZM805 350L900 330 950 390 895 445 820 415Z"></path>');
       }
     }
   }
@@ -1393,7 +1411,7 @@ async function loadMap() {
     const selected=Boolean(point.raw[3]);
     const coordinates=`${Number(point.raw[1]).toFixed(5)}°, ${Number(point.raw[2]).toFixed(5)}°`;
     tooltip.classList.toggle('selected',selected);
-    tooltip.innerHTML=`<header><i></i><b>${esc(state.mapHoverStation)}</b><span>${selected?'已选择':'满足条件'}</span></header><div class="map-tooltip-grid"><span>站网</span><b>${esc(detail?.network||'正在读取…')}</b><span>国家/地区</span><b>${esc(detail?stationRecordedCountryName(detail.countryArea||detail.country):'正在读取…')}</b><span>采样率</span><b>${esc(detail?.interval||'—')}</b><span>接收机</span><b title="${esc(detail?.receiver||'—')}">${esc(detail?.receiver||'—')}</b><span>卫星系统</span><b title="${esc(detail?.system||'—')}">${esc(detail?.system||'—')}</b><span>坐标</span><b>${esc(coordinates)}</b></div>`;
+    setHtml(tooltip, `<header><i></i><b>${esc(state.mapHoverStation)}</b><span>${selected?'已选择':'满足条件'}</span></header><div class="map-tooltip-grid"><span>站网</span><b>${esc(detail?.network||'正在读取…')}</b><span>国家/地区</span><b>${esc(detail?stationRecordedCountryName(detail.countryArea||detail.country):'正在读取…')}</b><span>采样率</span><b>${esc(detail?.interval||'—')}</b><span>接收机</span><b title="${esc(detail?.receiver||'—')}">${esc(detail?.receiver||'—')}</b><span>卫星系统</span><b title="${esc(detail?.system||'—')}">${esc(detail?.system||'—')}</b><span>坐标</span><b>${esc(coordinates)}</b></div>`);
     tooltip.classList.remove('hidden');
     const rect=viewport.getBoundingClientRect(),width=tooltip.offsetWidth||246,height=tooltip.offsetHeight||170;
     const left=clamp(state.mapHoverPosition.x-rect.left+14,8,Math.max(8,rect.width-width-8));
@@ -1461,10 +1479,10 @@ async function loadMap() {
 
   const columnDefinitions = [ ['network','站网'],['country','国家'],['format','格式'],['interval','采样率'],['system','系统'],['receiver','接收机'],['antenna','天线'],['radome','天线罩'],['availability','范围完整性'],['status','状态'] ];
   const hiddenColumns = new Set();
-  function buildColumnMenu() { $('#columnMenu').innerHTML = columnDefinitions.map(([key,label]) => `<label><input type="checkbox" data-column="${key}" checked>${label}</label>`).join(''); $$('#columnMenu input').forEach(input=>input.addEventListener('change',()=>{ input.checked?hiddenColumns.delete(input.dataset.column):hiddenColumns.add(input.dataset.column);applyColumnVisibility(); })); }
+  function buildColumnMenu() { setHtml($('#columnMenu'), columnDefinitions.map(([key,label]) => `<label><input type="checkbox" data-column="${key}" checked>${label}</label>`).join('')); $$('#columnMenu input').forEach(input=>input.addEventListener('change',()=>{ input.checked?hiddenColumns.delete(input.dataset.column):hiddenColumns.add(input.dataset.column);applyColumnVisibility(); })); }
   function applyColumnVisibility() { columnDefinitions.forEach(([key])=>$$(`[data-col="${key}"]`).forEach(node=>node.classList.toggle('hidden',hiddenColumns.has(key)))); }
 
-  function updatePreciseCompletenessInput(){const mode=$('#preciseCompletenessMode').value,input=$('#preciseCompletenessValue'),unit=$('#preciseCompletenessUnit');input.disabled=mode==='ignore';input.max=mode==='ratio'?'100':'100000';input.placeholder=mode==='ratio'?'例如 95':'例如 30';setNodeText(unit,mode==='days'?'天':'%');input.classList.toggle('hidden',mode==='ignore');unit.classList.toggle('hidden',mode==='ignore');}
+  function updatePreciseCompletenessInput(){const mode=$('#preciseCompletenessMode').value,input=$('#preciseCompletenessValue'),unit=$('#preciseCompletenessUnit');input.disabled=mode==='ignore';input.max=mode==='ratio'?'100':'100000';input.placeholder=uiText(mode==='ratio'?'e.g. 95':'e.g. 30', mode==='ratio'?'例如 95':'例如 30');setNodeText(unit,mode==='days'?'天':'%');input.classList.toggle('hidden',mode==='ignore');unit.classList.toggle('hidden',mode==='ignore');}
   function preciseFilterPayload() { return { family:$('#productFamily').value, center:$('#preciseCenter').value, latency:$('#preciseLatency').value, completeness:'any', completenessMode:$('#preciseCompletenessMode').value, completenessValue:$('#preciseCompletenessValue').value||'0', search:$('#preciseSearch').value.trim() }; }
   function preciseCenterFullName(code){
     const key=({EMR:'EMR/NRCan',WHU:'WHU/WUM',WUM:'WHU/WUM'})[code]||code;
@@ -1551,7 +1569,7 @@ async function loadMap() {
     const choices=customRuleChoices(Object.fromEntries(Object.entries(selects).map(([key,select])=>[key,select.value])));
     ['family','latency','center','interval'].forEach(key=>{
       const disabled=key==='interval'&&!choices.supportsInterval;
-      selects[key].innerHTML=customRuleOptionsMarkup(disabled?[['','不适用']]:choices[`${key}Options`],choices[key]);
+      setHtml(selects[key], customRuleOptionsMarkup(disabled?[['','不适用']]:choices[`${key}Options`],choices[key]));
       selects[key].value=choices[key];selects[key].disabled=disabled;
     });
   }
@@ -1562,8 +1580,8 @@ async function loadMap() {
     customRuleCatalog={ready,signature,rows:ready?values.filter(item=>item&&item.family&&item.latency&&item.center).map(item=>({family:String(item.family),latency:String(item.latency),center:String(item.center),interval:String(item.interval||'').toUpperCase()})):[]};
     $$('.custom-preset-rule',$('#customPresetRules')).forEach(refreshCustomRule);
   }
-  function addCustomRule(rule){$('#customPresetRules').insertAdjacentHTML('beforeend',customRuleMarkup(rule));}
-  function setCustomPresetEditor(item){state.editingCustomPreset=item?.id||'';setValue('#customPresetName',item?.name||'');$('#customPresetRules').innerHTML='';(item?.rules?.length?item.rules:[{family:'sp3',latency:'final',center:'All analysis centers'}]).forEach(addCustomRule);$('#deleteCustomPreset').disabled=!item;renderCustomPresetLibrary();}
+  function addCustomRule(rule){appendHtml($('#customPresetRules'), 'beforeend', customRuleMarkup(rule));}
+  function setCustomPresetEditor(item){state.editingCustomPreset=item?.id||'';setValue('#customPresetName',item?.name||'');setHtml($('#customPresetRules'), '');(item?.rules?.length?item.rules:[{family:'sp3',latency:'final',center:'All analysis centers'}]).forEach(addCustomRule);$('#deleteCustomPreset').disabled=!item;renderCustomPresetLibrary();}
   function startNewCustomPreset(){setCustomPresetEditor(null);$('#customPresetName').focus();}
   function openCustomPresetManager(){const value=$('#quickPreset').value,item=value.startsWith('custom:')?state.customPresets.find(entry=>entry.id===value.slice(7)):null;setCustomPresetEditor(item);const layer=$('#customPresetLayer');layer.classList.remove('hidden');layer.setAttribute('aria-hidden','false');}
   function readCustomRules(){return $$('.custom-preset-rule',$('#customPresetRules')).map(row=>({family:$('[data-custom-family]',row).value,latency:$('[data-custom-latency]',row).value,center:$('[data-custom-center]',row).value,interval:$('[data-custom-interval]',row).disabled?'':$('[data-custom-interval]',row).value}));}
@@ -1636,10 +1654,10 @@ async function loadMap() {
     const needsProviders=kind==='gimProductGrades'&&!splitChoiceValues($('#advancedGimProviders')?.value).length;
     if(kind==='gimProductGrades')trigger.disabled=needsProviders;
     const emptyText=needsProviders?'请先选择 GIM 机构':kind==='gimProductGrades'?'未选择（全部等级）':trigger.closest('.exclude')?'未选择（不排除）':'未选择（不限制）';
-    const summary=values.length ? (values.length<=2?values.map(value=>choiceDisplay(kind,value)).join('、'):`已选择 ${values.length} 项`) : emptyText;
+    const summary=values.length ? (values.length<=2?values.map(value=>choiceDisplay(kind,value)).join(uiText(', ', '、')):uiText(`${values.length} selected`, `已选择 ${values.length} 项`)) : emptyText;
     const label=$('b',trigger);if(label)setNodeText(label,summary);
     trigger.classList.toggle('has-value',values.length>0);
-    trigger.title=values.length?values.map(value=>choiceDisplay(kind,value)).join('、'):emptyText;
+    trigger.title=values.length?values.map(value=>choiceDisplay(kind,value)).join(uiText(', ', '、')):emptyText;
   }
   function reconcileGimGrades(){
     const providers=new Set(splitChoiceValues($('#advancedGimProviders')?.value));
@@ -1679,35 +1697,35 @@ async function loadMap() {
     }
     if(kind==='signals'){
       // Group candidates by system and version within one scrollable list.
-      if(groups){groups.classList.add('hidden');groups.innerHTML='';}
+      if(groups){groups.classList.add('hidden');setHtml(groups, '');}
       ordered=[...all].sort(compareSignalValues);
     }else{
-      if(groups){groups.classList.add('hidden');groups.innerHTML='';}state.choiceGroup='all';
+      if(groups){groups.classList.add('hidden');setHtml(groups, '');}state.choiceGroup='all';
     }
     const matched=ordered.filter(value=>(kind!=='signals'||state.choiceGroup==='all'||signalGroup(value)===state.choiceGroup)&&(!needle||choiceDisplay(kind,value).toLocaleLowerCase().includes(needle)));
     const visible=kind==='signals' ? matched : matched.slice(0,200);
-    if(state.advancedChoicesLoading&&kind!=='systems'&&!all.length)root.innerHTML='<div class="choice-option-empty">正在从本地索引读取候选项…</div>';
-    else if(!visible.length)root.innerHTML='<div class="choice-option-empty">没有匹配的候选项</div>';
+    if(state.advancedChoicesLoading&&kind!=='systems'&&!all.length)setHtml(root, '<div class="choice-option-empty">正在从本地索引读取候选项…</div>');
+    else if(!visible.length)setHtml(root, '<div class="choice-option-empty">没有匹配的候选项</div>');
     else if(kind==='signals') {
       let previousHeader='';
-      root.innerHTML=visible.map(value=>{
+      setHtml(root, visible.map(value=>{
         const group=signalGroup(value), version=signalRinexVersion(value), header=`${group}|${version}`;
         const heading=header===previousHeader?'':`<div class="choice-option-group"><b>${esc(signalGroupNames[group]||group)}</b><span>RINEX ${version}</span></div>`;
         previousHeader=header;
         return `${heading}<button type="button" class="choice-option ${selected.has(value)?'checked':''}" data-choice-value="${esc(value)}" title="${esc(choiceDisplay(kind,value))}"><span>${esc(choiceDisplay(kind,value))}</span></button>`;
-      }).join('');
+      }).join(''));
     } else if(kind==='gimProductGrades') {
       let previousProvider='';
-      root.innerHTML=visible.map(value=>{
+      setHtml(root, visible.map(value=>{
         const provider=value.split(':')[0];
         const heading=provider===previousProvider?'':`<div class="choice-option-group"><b>${esc(localizeUiText(gimProviderLabels[provider]||provider))}</b></div>`;
         previousProvider=provider;
         return `${heading}<button type="button" class="choice-option ${selected.has(value)?'checked':''}" data-choice-value="${esc(value)}"><span>${esc(choiceDisplay(kind,value))}</span></button>`;
-      }).join('');
-    } else root.innerHTML=visible.map(value=>`<button type="button" class="choice-option ${selected.has(value)?'checked':''}" data-choice-value="${esc(value)}" title="${esc(choiceDisplay(kind,value))}"><span>${esc(choiceDisplay(kind,value))}</span></button>`).join('');
+      }).join(''));
+    } else setHtml(root, visible.map(value=>`<button type="button" class="choice-option ${selected.has(value)?'checked':''}" data-choice-value="${esc(value)}" title="${esc(choiceDisplay(kind,value))}"><span>${esc(choiceDisplay(kind,value))}</span></button>`).join(''));
     const groupLabel=kind==='signals'&&state.choiceGroup!=='all'?` · ${signalGroupNames[state.choiceGroup]||state.choiceGroup}`:'';
-    setText('#advancedChoiceSummary',`${choiceKindNames[kind] || '筛选项'}${groupLabel} · 可多选`);
-    setText('#advancedChoiceHint',matched.length>visible.length?`显示前 ${visible.length}/${matched.length} 项，请搜索缩小范围`:`${selected.size} 项已选择 · 共 ${matched.length} 项`);
+    setText('#advancedChoiceSummary',uiText(`${localizeUiText(choiceKindNames[kind] || '筛选项')}${groupLabel} · Multiple selections allowed`, `${choiceKindNames[kind] || '筛选项'}${groupLabel} · 可多选`));
+    setText('#advancedChoiceHint',matched.length>visible.length?uiText(`Showing ${visible.length}/${matched.length}; search to narrow the list`, `显示前 ${visible.length}/${matched.length} 项，请搜索缩小范围`):uiText(`${selected.size} selected · ${matched.length} total`, `${selected.size} 项已选择 · 共 ${matched.length} 项`));
   }
   function openAdvancedChoicePicker(trigger){
     const previous=activeChoiceTrigger();if(previous)previous.classList.remove('active');
@@ -1721,7 +1739,7 @@ async function loadMap() {
     if(!state.advancedChoices.systems.length)state.advancedChoices.systems=['GPS','GLO','GAL','BDS','QZS','SBS','IRN'];
     state.advancedChoicesLoading=false;
     state.advancedChoiceKey=state.pendingAdvancedChoiceKey;state.pendingAdvancedChoiceKey='';
-    if(message.error)addInfo(`高级筛选候选项读取提示：${message.error}`,'warning');
+    if(message.error)addInfo(uiText(`Advanced-filter choices: ${localizeUiText(message.error)}`, `高级筛选候选项读取提示：${message.error}`),'warning');
     if(state.activeChoiceInput){renderAdvancedChoiceList();positionAdvancedChoicePicker(activeChoiceTrigger());}
   }
   function updateAdvancedInputs() {
@@ -1821,11 +1839,11 @@ async function loadMap() {
       const selectedIso=activeInput.value||'';
       if(popupView==='year'){
         const years=[];for(let year=Number(activeInput.min.slice(0,4));year<=maxYear;year++)years.push(`<button type="button" data-date-year="${year}" class="${year===viewYear?' selected':''}">${year}</button>`);
-        picker.innerHTML=`<div class="date-native-head"><b>${english?'Choose year':'选择年份'}</b><button type="button" class="date-native-back" data-date-back>${english?'Back':'返回'}</button></div><div class="date-native-year-grid">${years.join('')}</div>`;
+        setHtml(picker, `<div class="date-native-head"><b>${english?'Choose year':'选择年份'}</b><button type="button" class="date-native-back" data-date-back>${english?'Back':'返回'}</button></div><div class="date-native-year-grid">${years.join('')}</div>`);
         const selectedYearButton=picker.querySelector('.date-native-year-grid .selected');if(selectedYearButton)selectedYearButton.scrollIntoView({block:'center'});return;
       }
       if(popupView==='month'){
-        picker.innerHTML=`<div class="date-native-head"><b>${english?'Choose month':'选择月份'}</b><button type="button" class="date-native-back" data-date-back>${english?'Back':'返回'}</button></div><div class="date-native-month-grid">${monthNames.map((month,index)=>`<button type="button" data-date-month="${index}" class="${index===viewMonth?' selected':''}">${english?month:`${index+1}月`}</button>`).join('')}</div>`;
+        setHtml(picker, `<div class="date-native-head"><b>${english?'Choose month':'选择月份'}</b><button type="button" class="date-native-back" data-date-back>${english?'Back':'返回'}</button></div><div class="date-native-month-grid">${monthNames.map((month,index)=>`<button type="button" data-date-month="${index}" class="${index===viewMonth?' selected':''}">${english?month:`${index+1}月`}</button>`).join('')}</div>`);
         return;
       }
       const firstOffset=(new Date(Date.UTC(viewYear,viewMonth,1)).getUTCDay()+6)%7;
@@ -1840,7 +1858,7 @@ async function loadMap() {
         const disabledClass=disabled?' disabled':'';
         cells.push(`<button type="button" data-date-value="${value}" class="date-native-day${selectedClass}${todayClass}${mutedClass}${disabledClass}" ${disabled?'disabled':''}>${day}</button>`);
       }
-      picker.innerHTML=`<div class="date-native-head"><div class="date-native-title"><button type="button" data-date-year-toggle>${english?viewYear:`${viewYear}年`}</button><button type="button" data-date-month-toggle>${english?monthNames[viewMonth]:`${String(viewMonth+1).padStart(2,'0')}月`}</button></div><div class="date-native-nav"><button type="button" data-date-prev aria-label="${english?'Previous month':'上个月'}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10 8 6l4 4"></path></svg></button><button type="button" data-date-next aria-label="${english?'Next month':'下个月'}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"></path></svg></button></div></div><div class="date-native-week">${weekdayLabels.map(day=>`<span>${day}</span>`).join('')}</div><div class="date-native-grid">${cells.join('')}</div><div class="date-native-foot"><button type="button" data-date-clear>${english?'Clear':'清除'}</button><button type="button" data-date-today>${english?'Today':'今天'}</button></div>`;
+      setHtml(picker, `<div class="date-native-head"><div class="date-native-title"><button type="button" data-date-year-toggle>${english?viewYear:`${viewYear}年`}</button><button type="button" data-date-month-toggle>${english?monthNames[viewMonth]:`${String(viewMonth+1).padStart(2,'0')}月`}</button></div><div class="date-native-nav"><button type="button" data-date-prev aria-label="${english?'Previous month':'上个月'}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10 8 6l4 4"></path></svg></button><button type="button" data-date-next aria-label="${english?'Next month':'下个月'}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"></path></svg></button></div></div><div class="date-native-week">${weekdayLabels.map(day=>`<span>${day}</span>`).join('')}</div><div class="date-native-grid">${cells.join('')}</div><div class="date-native-foot"><button type="button" data-date-clear>${english?'Clear':'清除'}</button><button type="button" data-date-today>${english?'Today':'今天'}</button></div>`);
       if(selected&&selected.getUTCFullYear()===viewYear&&selected.getUTCMonth()===viewMonth){const selectedDay=picker.querySelector('.date-native-day.selected');if(selectedDay)selectedDay.scrollIntoView({block:'nearest'});}
     };
     const openPicker=input=>{
@@ -1855,7 +1873,7 @@ async function loadMap() {
     ['#startDate','#endDate','#preciseStartDate','#preciseEndDate'].forEach(selector=>{
       const input=$(selector); if(!input)return;
       const minYear=input.id.startsWith('precise')?1980:1994;
-      input.min=`${minYear}-01-01`; input.max=maxDate; input.title=`范围：${minYear} 年至 ${maxYear} 年`;
+      input.min=`${minYear}-01-01`; input.max=maxDate; input.title=uiText(`Range: ${minYear}–${maxYear}`, `范围：${minYear} 年至 ${maxYear} 年`);
       input.addEventListener('pointerdown',event=>{event.preventDefault();openPicker(input);});
       input.addEventListener('click',event=>{event.preventDefault();if(activeInput!==input||picker.classList.contains('hidden'))openPicker(input);});
     });
@@ -1883,7 +1901,7 @@ async function loadMap() {
       const node=event.target;if(!node.matches?.('.equipment-period')||!node.open)return;
       const item=state.stationDetailData?.periods?.[Number(node.dataset.periodIndex)];
       const body=node.querySelector('.equipment-period-body');
-      if(item&&body&&!body.childElementCount)body.innerHTML=equipmentPeriodMarkup(item);
+      if(item&&body&&!body.childElementCount)setHtml(body, equipmentPeriodMarkup(item));
     },true);
     configureDateInputs();
     $$('.mode-tab').forEach(button=>button.addEventListener('click',()=>setMode(button.dataset.mode)));
@@ -2682,13 +2700,9 @@ async function loadMap() {
     const dict = toEn ? enDict : zhDict;
     const exact = dict[raw.trim()] || (toEn ? enCanonical.get(canonicalUiKey(raw)) : undefined);
     if (exact) return raw.replace(raw.trim(), exact);
-    const paths = [];
-    let out = raw.replace(/(?:[A-Za-z]:[\\/]|(?:https?|ftp):\/\/)[^\s<>\"；。]+/g, path => {paths.push(path);return `\uE000${paths.length-1}\uE001`;});
-    if (toEn) out = out.replace(/(\d+)\s*个(?![\u4e00-\u9fff])/g, '$1 items');
-    const entries = toEn ? enEntries : zhEntries;
-    for (const [from,to] of entries) if (out.includes(from)) out = out.split(from).join(to);
-    if (toEn) out = out.replace(/ 缺 /g, ' missing ').replace(/另 (\d+) 段/g, '$1 more intervals').replace(/；\s*/g, '; ').replace(/：\s*/g, ': ').replace(/，\s*/g, ', ').replace(/。\s*/g, '. ');
-    return out.replace(/\uE000(\d+)\uE001/g, (_, index) => paths[Number(index)]);
+    // Unknown text is preserved. Partial word replacement can corrupt labels,
+    // identifiers and user content; complete messages are checked before release.
+    return raw;
   }
   Object.assign(enDict, {'查询完成：':'Query complete: ', '个测站，地图显示':'stations; mapped', '个暂缺坐标。':'stations without coordinates.', '下载文件异常累计':'File download errors: ', '条；最近：':' total; latest: '});
   // The packaged HTML includes some full-width parentheses while newer UI
@@ -2697,6 +2711,7 @@ async function loadMap() {
   Object.assign(enDict, {'条件':'Condition','完整率 ≥':'At least ≥','最低完整率 (%)':'Minimum (%)'});
   Object.assign(enDict, {'本发布版数据截至 2026-08-01（含当天）；各站网和产品的实际覆盖范围可能更早。':'Release data dates end on 2026-08-01 inclusive; some networks and products end earlier.'});
   Object.assign(enDict, {
+    '高级筛选未应用：请检查可用性与观测质量阈值。比例应为0–100，其余六类质量上限不得为负数。':'Advanced filters were not applied. Check the availability and observation-quality thresholds. Percentages must be 0–100; all six quality upper limits must be nonnegative.',
     '单击查看测站详情':'Click to view station details',
     '展开查看':'Expand',
     '高速索引；下载时按日期读取下载源':'Download sources are resolved for the selected dates.',
@@ -2718,10 +2733,76 @@ async function loadMap() {
     '天线校准模型':'Antenna calibration model',
     '文件名与候选镜像已经解析':'Filename and candidate mirrors have been resolved'
   });
+  Object.assign(enDict, {
+  "纬度 (°)": "Latitude (°)",
+  "经度 (°)": "Longitude (°)",
+  "0 已选择": "0 selected",
+  "+新建方案": "+ New preset",
+  "IGS / 国际 GNSS 服务": "IGS / International GNSS Service",
+  "CODE / 欧洲定轨中心": "CODE / Center for Orbit Determination in Europe",
+  "EMR/NRCan / 加拿大自然资源部": "EMR/NRCan / Natural Resources Canada",
+  "ESA / 欧洲航天局": "ESA / European Space Agency",
+  "GFZ / 德国地学研究中心": "GFZ / German Research Centre for Geosciences",
+  "GRG / 法国 GRGS": "GRG / GRGS, France",
+  "JPL / 喷气推进实验室": "JPL / Jet Propulsion Laboratory",
+  "MIT / 麻省理工学院": "MIT / Massachusetts Institute of Technology",
+  "NGS / 美国国家大地测量局": "NGS / National Geodetic Survey",
+  "SIO / 斯克里普斯海洋研究所": "SIO / Scripps Institution of Oceanography",
+  "USNO / 美国海军天文台": "USNO / United States Naval Observatory",
+  "WHU/WUM / 武汉大学": "WHU/WUM / Wuhan University",
+  "JGX / 日本多 GNSS 联合分析": "JGX / Japanese Multi-GNSS Joint Analysis",
+  "HUST / 华中科技大学": "HUST / Huazhong University of Science and Technology",
+  "IERS / 国际地球自转与参考系服务": "IERS / International Earth Rotation and Reference Systems Service",
+  "IAC / 俄罗斯信息分析中心": "IAC / Information and Analysis Center",
+  "JAXA / 日本宇宙航空研究开发机构": "JAXA / Japan Aerospace Exploration Agency",
+  "SHAO / 上海天文台": "SHAO / Shanghai Astronomical Observatory",
+  "BKG / 德国联邦制图与大地测量局": "BKG / Federal Agency for Cartography and Geodesy",
+  "IGN / 法国国家地理院": "IGN / National Institute of Geographic and Forest Information",
+  "DLR / 德国航空航天中心": "DLR / German Aerospace Center",
+  "CAS / 中国科学院": "CAS / Chinese Academy of Sciences",
+  "UPC / 加泰罗尼亚理工大学": "UPC / Universitat Politecnica de Catalunya",
+  "OPTIMAP / OPTIMAP 分析中心": "OPTIMAP / OPTIMAP Analysis Center",
+  "Other / 其他机构": "Other / Other providers",
+  "按日期自动选择（IGS14 / IGb14 / IGS20 / IGb20 / IGc20）": "Automatic by date (IGS14 / IGb14 / IGS20 / IGb20 / IGc20)",
+  "IGS14（2017-01-29 至 2020-05-16）": "IGS14 (2017-01-29 to 2020-05-16)",
+  "IGb14（2020-05-17 至 2022-11-26）": "IGb14 (2020-05-17 to 2022-11-26)",
+  "IGS20（2022-11-27 至 2025-02-01）": "IGS20 (2022-11-27 to 2025-02-01)",
+  "IGb20（2025-02-02 至 2026-01-10）": "IGb20 (2025-02-02 to 2026-01-10)",
+  "IGc20（2026-01-11 起）": "IGc20 (from 2026-01-11)",
+  "卫星系统 · 包含": "Satellite systems · Include",
+  "卫星系统 · 排除": "Satellite systems · Exclude",
+  "接收机型号 · 包含": "Receiver model · Include",
+  "接收机型号 · 排除": "Receiver model · Exclude",
+  "天线型号 · 包含": "Antenna model · Include",
+  "天线型号 · 排除": "Antenna model · Exclude",
+  "观测码 / 频点 · 包含": "Observation codes / Signals · Include",
+  "观测码 / 频点 · 排除": "Observation codes / Signals · Exclude",
+  "未选择（不限制）": "None selected (unrestricted)",
+  "未选择（不排除）": "None selected (no exclusions)",
+  "3 · 位置时间序列": "3 · Position time series",
+  "4 · 坐标残差": "4 · Coordinate residuals",
+  "0–1 平静 · 2–3 不稳定 · 4 活跃 · 5/6/7/8/9 分别为 NOAA G1/G2/G3/G4/G5 磁暴": "0–1 quiet · 2–3 unsettled · 4 active · 5/6/7/8/9 correspond to NOAA G1/G2/G3/G4/G5 geomagnetic storms",
+  "仅保留 ≤": "Keep only ≤",
+  "排除 ≤": "Exclude ≤",
+  "例如 ZIM2、MGEX、CHN、POLARX5…": "e.g. ZIM2, MGEX, CHN, POLARX5…",
+  "关闭国家/地区选择": "Close country / region selection",
+  "Kp下限": "Kp lower bound",
+  "Kp上限": "Kp upper bound",
+  "Dst下限": "Dst lower bound",
+  "Dst上限": "Dst upper bound",
+  "F10.7下限": "F10.7 lower bound",
+  "F10.7上限": "F10.7 upper bound"
+});
+  Object.assign(enDict, {
+    '自定义经纬度范围':'Custom latitude / longitude bounds',
+    '观测码 / 频点':'Observation codes / Signals',
+    'EMR / 加拿大自然资源部':'EMR / Natural Resources Canada',
+    'WHU / 武汉大学':'WHU / Wuhan University',
+    '上一页':'Previous page','下一页':'Next page',
+    '所选日期范围内没有可下载记录':'No downloadable records in the selected date range'
+  });
   const enCanonical = new Map(Object.entries(enDict).map(([key,value]) => [canonicalUiKey(key),value]));
   const zhDict = {}; for (const k in enDict) if (!(enDict[k] in zhDict)) zhDict[enDict[k]] = k;
-  const sortedEntries = dict => Object.entries(dict).filter(([from,to]) => from && to).sort((a,b) => b[0].length - a[0].length);
-  const enEntries = sortedEntries(enDict), zhEntries = sortedEntries(zhDict);
   function isDarkUi() { return uiPrefs.theme === 'dark'; }
   function loadUiPrefs() {
     try { const language = localStorage.getItem(uiLanguageKey);
@@ -2750,6 +2831,13 @@ async function loadMap() {
     }
     document.querySelectorAll('#languageSwitch button').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
     if (translateObserver) translateObserver.disconnect();
+    if (Object.keys(state.latest).length) {
+      syncObservation(state.latest);
+      syncPrecise(state.latest);
+    }
+    updateCountryTrigger();
+    if (state.activeChoiceInput) renderAdvancedChoiceList();
+    if (state.mapHoverStation) renderMapStationTooltip();
     renderQuickPresetOptions();
     renderCustomPresetLibrary();
     renderActiveFilters();
@@ -2778,7 +2866,7 @@ async function loadMap() {
     if (!$('#countryPickerLayer')?.classList.contains('hidden')) renderCountryPicker();
     if(state.stationDetailData) {
       const row=findObservation(state.detailStation);
-      if(row)$('#stationDetailBody').innerHTML=stationDetailMarkup(row);
+      if(row)setHtml($('#stationDetailBody'), stationDetailMarkup(row));
       renderCoverage($('#stationDateCoverage'),state.stationDetailData.coverage);
     }
     if(state.productCoverage)renderClkAntex(state.productCoverage.antex);

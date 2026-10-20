@@ -32,6 +32,7 @@
 
 # Python cache and editor/OS files.
 __pycache__/
+/node_modules/
 *.py[cod]
 *.tmp
 *.bak

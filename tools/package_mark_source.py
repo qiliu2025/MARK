@@ -2,6 +2,8 @@
 from pathlib import Path
 import argparse
 import os
+import shutil
+import subprocess
 import zipfile
 
 
@@ -13,7 +15,11 @@ def create_archive(source, output):
     for name in ('CMakeLists.txt', 'LICENSE', 'README.md', 'src/main.cpp', 'docs/BUILD.md'):
         if not (source / name).is_file():
             raise ValueError('The source directory is incomplete: ' + name)
-    skipped = {'.git', '.vs', '.idea', '.vscode', '__pycache__'}
+    node = shutil.which('node')
+    if not node:
+        raise ValueError('Node.js is required for release localization validation')
+    subprocess.run([node, str(source / 'tools/check_ui_localization.cjs')], check=True)
+    skipped = {'.git', '.vs', '.idea', '.vscode', '__pycache__', 'node_modules'}
     root_outputs = {'build', 'build-private', 'out', 'release', 'dist', 'private', 'software', 'knowledge-base', 'runtime-data', 'tmp'}
     files = []
     for path in sorted(source.rglob('*')):

@@ -76,6 +76,8 @@ Build the desktop application and setup executable with the same key:
 
 Packaging requires Python 3.12 or later, DuckDB 1.5.5 and `cryptography`. These are maintainer dependencies; users of the generated installer do not need Python. Allow 50 GiB of temporary packaging space.
 
+Release validation also requires Node.js 22 or later, Playwright and Microsoft Edge. Install Playwright with `npm install --no-save --package-lock=false playwright`, then run `node tools/check_ui_localization.cjs`. The check renders observation and product views, filters, counts, dialogs and language changes, and checks native status messages. Source and installer packaging both run this check and stop if application text remains untranslated. Node.js and Playwright are not included in the installed application.
+
 ```powershell
 python -m pip install duckdb==1.5.5 cryptography
 python .\tools\package_mark_source.py --output .\dist\MARK\source\MARK-v1.0.0-source.zip

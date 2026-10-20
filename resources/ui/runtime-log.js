@@ -50,6 +50,8 @@
   });
   function translateMessage(value, translate = text => text) {
     const raw = String(value).trim();
+    if (/^\d{4}-\d{2}-\d{2}(?:\s*至\s*\d{4}-\d{2}-\d{2})?(?:\s*[、；;]\s*\d{4}-\d{2}-\d{2}(?:\s*至\s*\d{4}-\d{2}-\d{2})?)*$/.test(raw))
+      return raw.replace(/\s*至\s*/g, ' to ').replace(/[、；]/g, '; ');
     const lines = raw.split(/\s*(?:\r?\n|\s+(?=日期筛选：|保留日期：))\s*/).filter(Boolean);
     if (lines.length > 1) return lines.map(translate).join(raw.includes('\n') ? '\n' : ' ');
     for (const {pattern,english,keys,fields} of messagePatterns) {

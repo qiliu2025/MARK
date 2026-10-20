@@ -89,6 +89,11 @@ def export_database(source, target, key):
 
 def main(arguments, key):
     portable = arguments.portable.resolve(strict=True)
+    node = shutil.which('node')
+    if not node:
+        raise ValueError('Node.js is required for release localization validation')
+    subprocess.run([node, str(Path(__file__).with_name('check_ui_localization.cjs')),
+                    str(portable / 'software/resources/ui')], check=True)
     setup = arguments.setup.resolve(strict=True)
     output = arguments.output.resolve()
     if output.exists():
