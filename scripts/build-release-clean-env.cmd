@@ -8,7 +8,7 @@ set "https_proxy="
 set "NO_PROXY="
 set "no_proxy="
 
-cmake -S "%~dp0.." -B "%~dp0..\out\build-v05" -DIGS_DOWNLOADER_BUILD_TESTS=ON
+cmake -S "%~dp0.." -B "%~dp0..\out\build-v05"
 if errorlevel 1 exit /b %errorlevel%
 
 cmake --build "%~dp0..\out\build-v05" --config Release

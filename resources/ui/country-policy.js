@@ -35,6 +35,7 @@
   };
   const displayName = (value,language='zh') => {
     const code=areaCode(value),rule=areas[code],english=language==='en';
+    if(['TWN','HKG','MAC'].includes(code))return countryName('CHN',language);
     if(!rule)return countryName(code,language);
     const name=english?rule.en:rule.zh;
     if(rule.country==='CHN')return english?`${name}, China`:`中国${name}`;

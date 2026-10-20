@@ -27,7 +27,7 @@ Create a distribution software directory after building:
 cmake --install .\build-private --config Release --prefix .\dist\software
 ```
 
-The default software installation contains `MARK.exe`, the SFTP and SOCKS helper programs, their dependencies and runtime resources. The full release installer also provides the separately licensed encrypted knowledge bases, the English PDF user manual and the corresponding MARK source archive.
+The default software installation contains `MARK.exe`, the SFTP and SOCKS helper programs, their dependencies and runtime resources. The full release installer also provides the separately licensed encrypted knowledge bases, the user manual and the corresponding MARK source archive.
 
 The public source's database key defaults to an empty string. Without a key, the source can compile, but that executable cannot decrypt the official release knowledge bases. The supplied release executable already has the matching read capability and requires no end-user key entry.
 
@@ -57,17 +57,6 @@ MARK/
 
 The compiled target alone does not produce the full knowledge bases. For normal use, download and run the official Windows installer. A developer using different databases must build with a matching key and retain the application's expected knowledge-base directory structure.
 
-## Tests
-
-The repository includes application and database-adapter tests. Some tests use
-small synthetic databases; tests that query provider endpoints require network
-access. Build only the targets needed for a change. For example:
-
-```powershell
-cmake --build .\build-private --config Release --target DuckDbCompatRegressionTest
-```
-
-Use `scripts/build-encrypted.ps1` for the application build.
 
 ## Repository hygiene
 

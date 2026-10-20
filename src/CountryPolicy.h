@@ -486,6 +486,7 @@ inline bool NeutralArea(std::string_view area) {
     return parent && parent->country.empty();
 }
 inline std::string DisplayName(std::string_view area) {
+    if (area == "TWN" || area == "HKG" || area == "MAC") return "中国";
     const auto* rule = Find(area);
     return std::string(rule ? rule->name : area);
 }

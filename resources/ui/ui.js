@@ -576,7 +576,7 @@
     const raw=String(value||'').trim();
     if(!raw||/^(?:N\/A|UNKNOWN|UNSPECIFIED)$/i.test(raw))return '';
     const code=/FALKLAND|MALVINAS/i.test(raw)?'FLK':window.MarkCountries.areaCode(raw);
-    if(code==='TWN')return uiPrefs.language==='en'?'Taiwan, China':'中国台湾';
+    if(['TWN','HKG','MAC'].includes(code))return window.MarkCountries.countryName('CHN',uiPrefs.language);
     const rule=window.MarkCountries.areas[code];
     if(rule)return uiPrefs.language==='en'?rule.en:rule.zh;
     const name=window.MarkCountries.countryName(code,uiPrefs.language);
