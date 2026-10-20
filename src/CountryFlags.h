@@ -3,6 +3,7 @@
 #include <string_view>
 #include "CountryPolicy.h"
 #include "CountryGeoPolicy.h"
+#include "StationAreaOverrides.h"
 
 namespace CountryFlags {
 struct Alias { std::string_view value; std::string_view alpha3; };
@@ -853,7 +854,7 @@ inline constexpr FlagCode kFlagCodes[] = {
     {"ZAF","ZA"},
     {"ZMB","ZM"},
     {"ZWE","ZW"},
-    // ISO areas omitted by Windows RegionInfo, plus Kosovo's common code.
+    // Additional codes used by the bundled atlas.
     {"ATA","AQ"},
     {"BVT","BV"},
     {"HMD","HM"},
@@ -905,22 +906,33 @@ inline std::string ResolveArea(std::string_view providerCountry,
     if (stationId.size() == 9) {
         if (IsKnownArea(idArea)) return idArea;
     }
-    return providerArea.size() == 3 ? providerArea : std::string("UNK");
+    return "UNK";
 }
 inline std::string ResolveStationArea(std::string_view providerCountry,
                                       std::string_view siteLogCountry,
                                       std::string_view stationId,
                                       bool legacyNgsFips,
-                                      double latitude, double longitude) {
+                                      double latitude, double longitude,
+                                      std::string_view fourCharId = {}) {
+    if (IsKnownArea(NormalizeArea(siteLogCountry))) {
+        return ResolveArea(providerCountry, siteLogCountry, stationId, legacyNgsFips);
+    }
     const auto region = CountryGeoPolicy::AreaAt(longitude, latitude);
     if (!region.empty()) {
-        if (region == "CHN") {
-            const auto original = ResolveArea(providerCountry, siteLogCountry, stationId, legacyNgsFips);
-            if (Normalize(original) == "CHN") return original;
+        const auto area = NormalizeArea(region);
+        if (IsKnownArea(area)) {
+            const auto sourceArea = ResolveArea(providerCountry, siteLogCountry, stationId, legacyNgsFips);
+            if (CountryPolicy::Find(sourceArea) && Normalize(sourceArea) == Normalize(area)) return sourceArea;
+            return area;
         }
-        return std::string(region);
     }
-    return ResolveArea(providerCountry, siteLogCountry, stationId, legacyNgsFips);
+    auto area = ResolveArea(providerCountry, siteLogCountry, stationId, legacyNgsFips);
+    if (area == "UNK" && std::isfinite(latitude) && std::isfinite(longitude)) {
+        const auto id = fourCharId.empty() ? stationId.substr(0, 4) : fourCharId;
+        const auto evidence = StationAreaOverrides::AreaAt(id, latitude, longitude);
+        if (!evidence.empty()) area = std::string(evidence);
+    }
+    return area;
 }
 inline std::wstring Emoji(std::string_view alpha3) {
     std::string alpha2;

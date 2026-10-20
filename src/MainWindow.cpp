@@ -22,7 +22,6 @@
 #include "SiteLogDb.h"
 #include "SpaceWeather.h"
 #include "StationSelection.h"
-#include "StationAreaOverrides.h"
 #include "StationCoordinateEvidence.h"
 #include "WebWorkbenchHost.h"
 
@@ -5746,8 +5745,6 @@ public:
                     add(L"测站完整名称", s.siteLogName); add(L"DOMES", s.siteLogDomes);
                     add(L"负责机构", s.siteLogAgency); add(L"运行单位", s.siteLogOperator);
                     add(L"城市", s.siteLogCity);
-                    // Country/region follows the station position. Source-log
-                    // text can be stale or attached to a reused station code.
                     const std::string stationArea = DisplayStationAreaCode(s);
                     add(L"国家/地区", stationArea);
                     fields += L']';
@@ -11202,38 +11199,13 @@ private:
     }
 
     static std::string DisplayAreaCode(const StationFile& station) {
-        // Site Log country names are tied to the actual monument and resolve
-        // legacy provider codes such as CJ, GJ and the NGS FIPS variants.
-        std::string area;
         if (station.hasCoordinate) {
-            area = CountryFlags::ResolveStationArea(station.country, station.siteLogCountry,
+            return CountryFlags::ResolveStationArea(station.country, station.siteLogCountry,
                 station.stationId, station.preferredSource == "NGS",
-                station.latitude, station.longitude);
-        } else {
-            area = CountryFlags::ResolveArea(station.country, station.siteLogCountry,
-                                             station.stationId, station.preferredSource == "NGS");
+                station.latitude, station.longitude, station.fourCharId);
         }
-        if (area == "UNK") {
-            // These two archived provider rows have no country metadata.
-            // NGL station pages place both monuments on Indonesian islands:
-            // /NGLStationPages/stations/PSKI.sta and /PBAI.sta.
-            const auto id = station.fourCharId.empty()
-                ? station.stationId.substr(0, 4) : station.fourCharId;
-            if (station.hasCoordinate) {
-                const auto audited = StationAreaOverrides::AreaAt(
-                    id, station.latitude, station.longitude);
-                if (!audited.empty()) return std::string(audited);
-            }
-            if ((id == "PSKI" && (!station.hasCoordinate
-                    || (std::abs(station.latitude + 1.124682) < 0.10
-                        && std::abs(station.longitude - 100.353404) < 0.10)))
-                || (id == "PBAI" && (!station.hasCoordinate
-                    || (std::abs(station.latitude + 0.032) < 0.15
-                        && std::abs(station.longitude - 98.526) < 0.15)))) {
-                return "IDN";
-            }
-        }
-        return area;
+        return CountryFlags::ResolveArea(station.country, station.siteLogCountry,
+            station.stationId, station.preferredSource == "NGS");
     }
 
     static std::string DisplayCountryCode(const StationFile& station) {
@@ -11241,12 +11213,6 @@ private:
     }
 
     static std::string DisplayStationAreaCode(const StationFile& station) {
-        if (DisplayAreaCode(station) == "PSE") return "ISR";
-        if (station.fourCharId == "HAMA" && station.hasCoordinate
-            && std::abs(station.latitude - 32.738028) < 0.02
-            && std::abs(station.longitude - 35.654476) < 0.02) {
-            return "ISR";
-        }
         return DisplayAreaCode(station);
     }
 
@@ -11274,7 +11240,6 @@ private:
     static bool MatchesCountryChoice(
         const StationFile& station, const std::string_view chosenCode) {
         const auto area = DisplayAreaCode(station);
-        if (area == "FLK") return false;
         if (CountryPolicy::SelectableRegionArea(chosenCode)) return area == chosenCode;
         return CountryFlags::Normalize(area) == chosenCode;
     }

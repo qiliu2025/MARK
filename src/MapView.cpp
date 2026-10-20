@@ -630,15 +630,6 @@ std::vector<CountryShape> ParseGeoJsonCountries(const std::string& json) {
                     country.disputed = JsonStringProperty(object, "MARK_STATUS") == "disputed"
                         || boundaryType == "undetermined" || country.controlLine;
                     country.iso = Utf8ToWide(JsonStringProperty(object, "ISO_A3"));
-                    std::wstring mapIso = country.iso;
-                    std::transform(mapIso.begin(), mapIso.end(), mapIso.begin(),
-                        [](const wchar_t character) {
-                            return static_cast<wchar_t>(std::towupper(character));
-                        });
-                    if (mapIso == L"TWN" || mapIso == L"ROC") {
-                        country.name = L"中国台湾";
-                        country.iso = L"CHN";
-                    }
                     country.rings = ParseGeoJsonRings(object.substr(
                         coordinatesStart,
                         coordinatesEnd - coordinatesStart + 1));
@@ -1018,9 +1009,8 @@ void DrawCountryBoundaries(
         return;
     }
     std::vector<const CountryShape*> ordered;
-    for (const auto& country : state.countries) if (!country.disputed && country.iso != L"CHN") ordered.push_back(&country);
+    for (const auto& country : state.countries) if (!country.disputed) ordered.push_back(&country);
     for (const auto& country : state.countries) if (country.disputed) ordered.push_back(&country);
-    for (const auto& country : state.countries) if (!country.disputed && country.iso == L"CHN") ordered.push_back(&country);
     if (!EnsureGdiplus()) {
         const HPEN borderPen = CreatePen(
             PS_SOLID,
@@ -1448,7 +1438,7 @@ void DrawHoverCard(HDC device, const MapState& state, const RECT& map) {
     const std::wstring details =
         Utf8ToWide(CountryPolicy::DisplayName(CountryFlags::ResolveStationArea(
             station.country, station.siteLogCountry, station.stationId,
-            station.preferredSource == "NGS", station.latitude, station.longitude)))
+            station.preferredSource == "NGS", station.latitude, station.longitude, station.fourCharId)))
         + L"  "
         + std::to_wstring(station.latitude).substr(0, 8)
         + L", "

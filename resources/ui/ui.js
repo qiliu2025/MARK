@@ -575,7 +575,7 @@
   function stationRecordedCountryName(value) {
     const raw=String(value||'').trim();
     if(!raw||/^(?:N\/A|UNKNOWN|UNSPECIFIED)$/i.test(raw))return '';
-    const code=/FALKLAND|MALVINAS/i.test(raw)?'FLK':window.MarkCountries.areaCode(raw);
+    const code=window.MarkCountries.areaCode(raw);
     if(['TWN','HKG','MAC'].includes(code))return window.MarkCountries.countryName('CHN',uiPrefs.language);
     const rule=window.MarkCountries.areas[code];
     if(rule)return uiPrefs.language==='en'?rule.en:rule.zh;
@@ -1134,28 +1134,16 @@ async function loadMap() {
       const response = await fetch('../ne_50m_admin_0_countries.geojson', {cache:'no-store'});
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const geo = await response.json();
-      if (geo.MARK_RENDERING === 'reference-lines') {
-        const render = (feature, className) => `<path class="${className}" d="${geometryPath(feature.geometry)}"></path>`;
-        const land = geo.features.filter(feature => feature.properties?.MARK_KIND === 'land');
-        const coast = geo.features.filter(feature => feature.properties?.MARK_KIND === 'coastline');
-        const borders = geo.features.filter(feature => feature.properties?.MARK_KIND === 'boundary');
-        $('#landLayer').innerHTML += land.map(feature => render(feature, 'map-reference-land')).join('');
-        $('#countryLayer').innerHTML = coast.map(feature => render(feature, 'map-reference-coast')).join('') + borders.map(feature => {
-          const type = ['international','undetermined','control'].includes(feature.properties.MARK_BOUNDARY_TYPE) ? feature.properties.MARK_BOUNDARY_TYPE : 'undetermined';
-          return `<path class="map-reference-border ${type}" data-boundary-type="${type}" data-source-id="${esc(feature.properties.NE_ID)}" d="${geometryPath(feature.geometry)}"></path>`;
-        }).join('');
-      } else {
-      const countryPath=feature=>`<path class="country-shape ${feature.properties?.MARK_KIND==='indicator'?'reference-indicator':''} ${feature.properties?.MARK_STATUS==='disputed'?'disputed-area':''}" data-country-code="${esc(feature.properties?.MARK_COUNTRY||'')}" d="${geometryPath(feature.geometry)}"></path>`;
-      const countryFeatures=geo.features.filter(feature=>!['region','island'].includes(feature.properties?.MARK_KIND));
-      const countries=countryFeatures.filter(feature=>feature.properties?.MARK_COUNTRY!=='CHN').map(countryPath).join('');
-      const disputed=geo.features.filter(feature=>feature.properties?.MARK_STATUS==='disputed').map(feature=>{
-        const d=geometryPath(feature.geometry);
-        return `<path class="disputed-boundary-halo" d="${d}"></path><path class="disputed-boundary" d="${d}"></path>`;
+      if (geo.MARK_RENDERING !== 'reference-lines') throw new Error('Unsupported map data');
+      const render = (feature, className) => `<path class="${className}" d="${geometryPath(feature.geometry)}"></path>`;
+      const land = geo.features.filter(feature => feature.properties?.MARK_KIND === 'land');
+      const coast = geo.features.filter(feature => feature.properties?.MARK_KIND === 'coastline');
+      const borders = geo.features.filter(feature => feature.properties?.MARK_KIND === 'boundary');
+      $('#landLayer').innerHTML += land.map(feature => render(feature, 'map-reference-land')).join('');
+      $('#countryLayer').innerHTML = coast.map(feature => render(feature, 'map-reference-coast')).join('') + borders.map(feature => {
+        const type = ['international','undetermined','control'].includes(feature.properties.MARK_BOUNDARY_TYPE) ? feature.properties.MARK_BOUNDARY_TYPE : 'undetermined';
+        return `<path class="map-reference-border ${type}" data-boundary-type="${type}" data-source-id="${esc(feature.properties.NE_ID)}" d="${geometryPath(feature.geometry)}"></path>`;
       }).join('');
-      // Draw this outline after the background strokes.
-      const china=countryFeatures.filter(feature=>feature.properties?.MARK_COUNTRY==='CHN').map(countryPath).join('');
-      $('#countryLayer').innerHTML = countries+disputed+china;
-      }
       const countryDisplayName = (properties, language) => {
         if(['indicator','land','coastline','boundary'].includes(properties.MARK_KIND))return '';
         const prescribed=properties[language==='en'?'MARK_NAME_EN':'MARK_NAME_ZH'];

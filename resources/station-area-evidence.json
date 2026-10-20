@@ -1,20 +1,9 @@
 {
   "schemaVersion": 1,
-  "purpose": "Resolve only the audited 2026-09-30 station coordinates still reported as UNK; do not infer locations for coordinate-free records.",
-  "observationPeriod": [
-    "1990-01-01",
-    "2026-09-30"
-  ],
+  "purpose": "Coordinate-backed fallback data for stations without a resolved country or region.",
   "polygonSource": "Natural Earth admin-0 countries 1:10m, public domain",
-  "polygonFile": "map-sources/natural-earth-countries-10m.original.geojson",
   "polygonSha256": "239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255",
   "nearestCoastMaxKm": 3,
-  "rejected": [
-    {
-      "id": "CAMI",
-      "reason": "no reliable land polygon nearby"
-    }
-  ],
   "stations": [
     {
       "id": "0KOB",
@@ -792,5 +781,6 @@
       "method": "inside-natural-earth-10m",
       "distanceToLandKm": 0.0
     }
-  ]
+  ],
+  "polygonUrl": "https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_10m_admin_0_countries.geojson"
 }

@@ -9,8 +9,7 @@
     "MTQ",
     "NCL",
     "VIR",
-    "ATA",
-    "FLK"
+    "ATA"
   ],
   "selectableRegionAreas": [
     "BES",
@@ -76,12 +75,6 @@
       "country": "FRA",
       "zh": "留尼汪",
       "en": "Reunion",
-      "kind": "region"
-    },
-    "MYT": {
-      "country": "COM",
-      "zh": "马约特",
-      "en": "Mayotte",
       "kind": "region"
     },
     "SPM": {
@@ -318,140 +311,17 @@
       "en": "Tokelau",
       "kind": "region"
     },
-    "XKK": {
-      "country": "SRB",
-      "zh": "科索沃",
-      "en": "Kosovo",
-      "kind": "region"
-    },
-    "SOL": {
-      "country": "SOM",
-      "zh": "索马里兰",
-      "en": "Somaliland",
-      "kind": "region"
-    },
-    "CYN": {
-      "country": "CYP",
-      "zh": "北塞浦路斯",
-      "en": "Northern Cyprus",
-      "kind": "region"
-    },
-    "FLK": {
-      "country": "ARG",
-      "zh": "马尔维纳斯群岛",
-      "en": "Malvinas Islands",
-      "kind": "region"
-    },
-    "ESH": {
-      "country": null,
-      "zh": "西撒哈拉",
-      "en": "Western Sahara",
-      "kind": "disputed"
-    },
-    "SGS": {
-      "country": null,
-      "zh": "南乔治亚和南桑威奇群岛",
-      "en": "South Georgia and the South Sandwich Islands",
-      "kind": "disputed"
-    },
-    "IOT": {
-      "country": "MUS",
-      "zh": "查戈斯群岛",
-      "en": "Chagos Archipelago",
-      "kind": "region"
-    },
     "ATA": {
       "country": null,
       "zh": "南极洲",
       "en": "Antarctica",
       "kind": "nonstate"
-    },
-    "KAS": {
-      "country": "KMR",
-      "zh": "锡亚琴冰川",
-      "en": "Siachen Glacier",
-      "kind": "region"
-    },
-    "CRM": {
-      "country": "UKR",
-      "zh": "克里米亚",
-      "en": "Crimea",
-      "kind": "region"
-    },
-    "GLN": {
-      "country": "SYR",
-      "zh": "戈兰高地",
-      "en": "Golan Heights",
-      "kind": "region"
-    },
-    "ABK": {
-      "country": "GEO",
-      "zh": "阿布哈兹",
-      "en": "Abkhazia",
-      "kind": "region"
-    },
-    "OSA": {
-      "country": "GEO",
-      "zh": "南奥塞梯",
-      "en": "South Ossetia",
-      "kind": "region"
-    },
-    "TRN": {
-      "country": "MDA",
-      "zh": "德涅斯特河沿岸",
-      "en": "Transnistria",
-      "kind": "region"
-    },
-    "NKR": {
-      "country": "AZE",
-      "zh": "纳戈尔诺-卡拉巴赫",
-      "en": "Nagorno-Karabakh",
-      "kind": "region"
-    },
-    "DNT": {
-      "country": "UKR",
-      "zh": "顿涅茨克",
-      "en": "Donetsk",
-      "kind": "region"
-    },
-    "LHN": {
-      "country": "UKR",
-      "zh": "卢甘斯克",
-      "en": "Luhansk",
-      "kind": "region"
-    },
-    "KMR": {
-      "country": null,
-      "zh": "克什米尔",
-      "en": "Kashmir",
-      "kind": "disputed",
-      "status": "地位未定"
-    },
-    "STB": {
-      "country": "CHN",
-      "zh": "藏南",
-      "en": "Southern Tibet",
-      "kind": "region"
-    },
-    "AKC": {
-      "country": "CHN",
-      "zh": "阿克赛钦",
-      "en": "Aksai Chin",
-      "kind": "region"
-    },
-    "DYA": {
-      "country": "CHN",
-      "zh": "钓鱼岛及其附属岛屿",
-      "en": "Diaoyu Dao and its affiliated islands",
-      "kind": "region"
     }
   },
   "aliases": {
     "KOS": "XKK",
     "XKX": "XKK",
     "KOSOVO": "XKK",
-    "SOMALILAND": "SOL",
-    "NORTHERN CYPRUS": "CYN",
     "ALD": "ALA",
     "PSX": "PSE",
     "PAL": "PSE",
@@ -515,45 +385,11 @@
     "阿什莫尔和卡捷群岛": "ATC",
     "托克劳": "TKL",
     "科索沃": "XKK",
-    "索马里兰": "SOL",
-    "北塞浦路斯": "CYN",
     "马尔维纳斯群岛": "FLK",
     "西撒哈拉": "ESH",
     "南乔治亚和南桑威奇群岛": "SGS",
     "查戈斯群岛": "IOT",
-    "南极洲": "ATA",
-    "锡亚琴冰川": "KAS",
-    "克里米亚": "CRM",
-    "CRIMEA": "CRM",
-    "戈兰高地": "GLN",
-    "GOLAN HEIGHTS": "GLN",
-    "阿布哈兹": "ABK",
-    "ABKHAZIA": "ABK",
-    "南奥塞梯": "OSA",
-    "SOUTH OSSETIA": "OSA",
-    "德涅斯特河沿岸": "TRN",
-    "TRANSNISTRIA": "TRN",
-    "纳戈尔诺-卡拉巴赫": "NKR",
-    "NAGORNO-KARABAKH": "NKR",
-    "顿涅茨克": "DNT",
-    "DONETSK": "DNT",
-    "卢甘斯克": "LHN",
-    "LUHANSK": "LHN",
-    "CRIMEA, RUSSIA": "CRM",
-    "CRIMEA, UKRAINE": "CRM",
-    "NAGORNO KARABAKH": "NKR",
-    "ARTSAKH": "NKR",
-    "克什米尔": "KMR",
-    "KASHMIR": "KMR",
-    "藏南": "STB",
-    "SOUTHERN TIBET": "STB",
-    "阿克赛钦": "AKC",
-    "AKSAI CHIN": "AKC",
-    "钓鱼岛及其附属岛屿": "DYA",
-    "DIAOYU DAO AND ITS AFFILIATED ISLANDS": "DYA",
-    "钓鱼岛": "DYA",
-    "DIAOYU DAO": "DYA",
-    "DIAOYU ISLANDS": "DYA"
+    "南极洲": "ATA"
   },
   "countryNames": {
     "CHN": {
@@ -643,130 +479,6 @@
     "AZE": {
       "zh": "阿塞拜疆",
       "en": "Azerbaijan"
-    },
-    "KMR": {
-      "zh": "克什米尔",
-      "en": "Kashmir"
     }
-  },
-  "geoOverrides": [
-    {
-      "area": "CRM",
-      "source": "disputed",
-      "feature": "B89"
-    },
-    {
-      "area": "GLN",
-      "source": "disputed",
-      "feature": "B16"
-    },
-    {
-      "area": "ABK",
-      "source": "disputed",
-      "feature": "B35"
-    },
-    {
-      "area": "OSA",
-      "source": "disputed",
-      "feature": "B37"
-    },
-    {
-      "area": "TRN",
-      "source": "disputed",
-      "feature": "B36"
-    },
-    {
-      "area": "NKR",
-      "source": "disputed",
-      "feature": "B38"
-    },
-    {
-      "area": "DNT",
-      "source": "disputed",
-      "feature": "C02"
-    },
-    {
-      "area": "LHN",
-      "source": "disputed",
-      "feature": "C03"
-    },
-    {
-      "area": "MYT",
-      "source": "world-country",
-      "feature": "FRA",
-      "bounds": [
-        44,
-        -14,
-        46,
-        -11
-      ]
-    },
-    {
-      "area": "IOT",
-      "source": "world-country",
-      "feature": "IOT"
-    },
-    {
-      "area": "PSE",
-      "source": "palestine-ocha"
-    },
-    {
-      "area": "KAS",
-      "source": "disputed",
-      "feature": "B45",
-      "excludeChina": true
-    },
-    {
-      "area": "KMR",
-      "source": "disputed-union",
-      "features": [
-        "B05",
-        "B08",
-        "B45"
-      ],
-      "excludeChina": true
-    },
-    {
-      "area": "STB",
-      "source": "disputed",
-      "feature": "B00",
-      "insideChina": true
-    },
-    {
-      "area": "AKC",
-      "source": "disputed",
-      "feature": "B07",
-      "insideChina": true
-    },
-    {
-      "area": "DYA",
-      "source": "china-admin",
-      "adcode": 710000,
-      "bounds": [
-        123.33333333333333,
-        25.666666666666668,
-        124.66666666666667,
-        26
-      ]
-    },
-    {
-      "area": "TWN",
-      "source": "china-admin",
-      "adcode": 710000
-    },
-    {
-      "area": "HKG",
-      "source": "china-admin",
-      "adcode": 810000
-    },
-    {
-      "area": "MAC",
-      "source": "china-admin",
-      "adcode": 820000
-    },
-    {
-      "area": "CHN",
-      "source": "china-admin"
-    }
-  ]
+  }
 }

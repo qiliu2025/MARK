@@ -96,10 +96,9 @@ function(gnss_runtime_resolve_output_path input_path output_variable)
     set(${output_variable} "${resolved_path}" PARENT_SCOPE)
 endfunction()
 
-function(gnss_clean_legacy_runtime_resources source_dir destination_dir)
+function(gnss_runtime_validate_destination source_dir destination_dir)
     file(REAL_PATH "${source_dir}" source_real)
     gnss_runtime_resolve_output_path("${destination_dir}" destination_real)
-    # A case-insensitive prefix check prevents cleaning source resources.
     string(TOLOWER "${source_real}" source_compare)
     string(TOLOWER "${destination_real}" destination_compare)
     cmake_path(IS_PREFIX source_compare "${destination_compare}" NORMALIZE inside_source)
@@ -107,36 +106,8 @@ function(gnss_clean_legacy_runtime_resources source_dir destination_dir)
         message(FATAL_ERROR "Runtime resource destination must be outside source resources")
     endif()
 
-    # Cleanup is limited to the listed legacy output paths.
-    set(legacy_paths
-        ui/brand-options
-        ui/brand-preview.html
-        ui/ui
-        ui/mark-logo.svg
-        mark.ico
-        country-policy.json
-        station-area-evidence.json
-        country-code-audit.csv
-        special-area-audit.csv
-        ne_10m_populated_places.geojson
-        ne_50m_admin_1_states_provinces.geojson
-        map-sources/offline-reference-sources-20260929.json
-        map-sources/palestine-ocha-admin0-20260929.geojson
-        map-sources/ne_10m_minor_islands.geojson
-        map-sources/ne_10m_admin_0_disputed_areas_scale_rank_minor_islands.geojson
-        map-sources/natural-earth-land-50m-20260929.geojson
-        map-sources/natural-earth-disputed.original.geojson
-        map-sources/natural-earth-disputed-lines-50m-20260929.geojson
-        map-sources/natural-earth-countries.original.geojson
-        map-sources/natural-earth-countries-10m.original.geojson
-        map-sources/natural-earth-coastline-50m-20260929.geojson
-        map-sources/natural-earth-boundary-lines-50m-20260929.geojson
-        map-sources/diaoyu-official-locations-20260929.json
-        map-sources/china-boundary-presentation-20260929.geojson
-        map-sources/china-admin-datav-20260929.geojson)
     gnss_runtime_resource_files("${source_dir}" runtime_paths)
-    # Resolve links before cleanup and reject paths outside the resource output.
-    foreach(relative_path IN LISTS runtime_paths legacy_paths)
+    foreach(relative_path IN LISTS runtime_paths)
         gnss_runtime_resolve_output_path("${destination_real}/${relative_path}" candidate_real)
         string(TOLOWER "${candidate_real}" candidate_compare)
         cmake_path(IS_PREFIX destination_compare "${candidate_compare}" NORMALIZE inside_destination)
@@ -144,27 +115,14 @@ function(gnss_clean_legacy_runtime_resources source_dir destination_dir)
             message(FATAL_ERROR "Resource path resolves outside the destination: ${relative_path}")
         endif()
     endforeach()
-    foreach(legacy_path IN LISTS legacy_paths)
-        set(legacy_file "${destination_real}/${legacy_path}")
-        if(EXISTS "${legacy_file}" OR IS_SYMLINK "${legacy_file}")
-            gnss_runtime_resolve_output_path("${legacy_file}" legacy_real)
-            string(TOLOWER "${legacy_real}" legacy_compare)
-            cmake_path(IS_PREFIX destination_compare "${legacy_compare}" NORMALIZE inside_destination)
-            if(NOT inside_destination)
-                message(FATAL_ERROR "Refusing to clean a resource path outside the destination: ${legacy_path}")
-            endif()
-            file(REMOVE_RECURSE "${legacy_file}")
-        endif()
-    endforeach()
 endfunction()
 
 function(gnss_install_runtime_resources)
     set(resource_source "${CMAKE_SOURCE_DIR}/resources")
     gnss_runtime_resource_files("${resource_source}" resource_files)
-    # Remove the same named obsolete files when updating an existing install.
     install(CODE "
         include(\"${CMAKE_CURRENT_FUNCTION_LIST_FILE}\")
-        gnss_clean_legacy_runtime_resources(
+        gnss_runtime_validate_destination(
             \"${resource_source}\"
             \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/resources\")
     ")
