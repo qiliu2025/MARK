@@ -862,8 +862,7 @@ inline constexpr FlagCode kFlagCodes[] = {
     {"ESH","EH"},
 }; 
 inline int Index(std::string_view alpha3) {
-    // Antarctica has an IGS-style geographic flag in the atlas even though
-    // it is not a sovereign country.
+    // Retain this atlas entry for geographic display.
     if (CountryPolicy::NeutralArea(alpha3) && alpha3 != "ATA") return -1;
     for (std::size_t index = 0; index < sizeof(kFlagCodes) / sizeof(kFlagCodes[0]); ++index) {
         if (alpha3 == kFlagCodes[index].alpha3) return static_cast<int>(index);
@@ -893,8 +892,7 @@ inline std::string ResolveArea(std::string_view providerCountry,
     const auto idArea = stationId.size() == 9
         ? NormalizeArea(stationId.substr(6, 3)) : std::string();
     if (IsKnownArea(logArea)) {
-        // A country-only Site Log must not erase a more specific area that
-        // belongs to that same country (e.g. Denmark + GRL or China + HKG).
+        // Preserve source-area detail when its normalized code is unchanged.
         if (!CountryPolicy::Find(logArea)) {
             for (const auto& area : {providerArea, idArea}) {
                 const auto* rule = CountryPolicy::Find(area);

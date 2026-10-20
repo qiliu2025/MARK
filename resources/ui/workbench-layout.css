@@ -23,7 +23,7 @@ html .topbar .mark-top-action { width:32px; height:32px; flex-basis:32px; }
 .observation-page,#observationPage,
 .precise-workspace,.precise-results-grid,.precise-side-stack { gap:4px; }
 .map-viewport { margin-left:8px; margin-right:8px; }
-.country-shape.sovereignty-indicator { fill:none; stroke-width:.65; }
+.country-shape.reference-indicator { fill:none; stroke-width:.65; }
 .country-shape.disputed-area { stroke:none; }
 .disputed-boundary-halo { fill:none; stroke:#d9e5eb; stroke-width:2.5; vector-effect:non-scaling-stroke; }
 .disputed-boundary { fill:none; stroke:#8fa6b6; stroke-width:.9; stroke-dasharray:4 3; vector-effect:non-scaling-stroke; }

@@ -1,8 +1,28 @@
 {
   "schemaVersion": 1,
-  "worldview": "PRC",
-  "ownFlagAreas": ["BES", "PYF", "ATF", "GRL", "GUM", "MTQ", "NCL", "VIR", "ATA", "FLK"],
-  "selectableRegionAreas": ["BES", "PYF", "ATF", "GRL", "GUM", "MTQ", "NCL", "VIR", "ATA"],
+  "ownFlagAreas": [
+    "BES",
+    "PYF",
+    "ATF",
+    "GRL",
+    "GUM",
+    "MTQ",
+    "NCL",
+    "VIR",
+    "ATA",
+    "FLK"
+  ],
+  "selectableRegionAreas": [
+    "BES",
+    "PYF",
+    "ATF",
+    "GRL",
+    "GUM",
+    "MTQ",
+    "NCL",
+    "VIR",
+    "ATA"
+  ],
   "areas": {
     "TWN": {
       "country": "CHN",
@@ -535,73 +555,6 @@
     "DIAOYU DAO": "DYA",
     "DIAOYU ISLANDS": "DYA"
   },
-  "notes": [
-    "ISO codes identify countries or areas. Area codes do not establish sovereignty.",
-    "CHN includes mainland China, Hong Kong, Macao and Taiwan; DNK includes Greenland and the Faroe Islands.",
-    "Cook Islands and Niue remain separate: China has diplomatic relations with both.",
-    "MARK assigns stations within the PSE reference geometry to ISR for country/region display and filtering; the original PSE source code remains in the reference data.",
-    "Territories with unresolved or changing status retain a neutral region entry and no national flag; this is not recognition of a state.",
-    "FLK follows China's support for Argentina's sovereignty claim over the Malvinas Islands.",
-    "Provider station IDs, metadata and download paths retain their original area codes.",
-    "Country affiliation is geographic. Agency/operator metadata and source country codes do not establish territorial sovereignty.",
-    "The PSE reference geometry uses OCHA oPt COD-AB (West Bank including East Jerusalem and Gaza) as a station-classification footprint; this application presentation does not alter source metadata.",
-    "Kashmir is shown as an unresolved region, excluding the China administrative reference area; control lines are not international borders.",
-    "Southern Tibet, Aksai Chin, Diaoyu Dao and its affiliated islands are in CHN. Internal area aliases are not ISO state codes."
-  ],
-  "sources": [
-    {
-      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/oz_678770/1206_679062/1206x0_679064/",
-      "description": "MFA Denmark profile: Greenland and Faroe Islands autonomous territories of the Kingdom of Denmark; checked 2026-09-29."
-    },
-    {
-      "url": "https://www.gov.cn/guoqing/2005-09/13/content_2582640.htm",
-      "description": "Constitution of the PRC; Taiwan and special administrative regions."
-    },
-    {
-      "url": "https://www.naturalearthdata.com/about/worldview/",
-      "description": "Existing map Chinese worldview attributes, supplemented by explicit PRC country/area policy."
-    },
-    {
-      "title": "中国外交部：科摩罗国家概况（2026年6月）",
-      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/fz_677316/1206_677872/1206x0_677874/",
-      "checked": "2026-09-29"
-    },
-    {
-      "title": "中国外交部：毛里求斯国家概况（2026年7月）",
-      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/fz_677316/1206_678164/1206x0_678166/",
-      "checked": "2026-09-29"
-    },
-    {
-      "title": "中国外交部：乌克兰国家概况（2026年6月）",
-      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/oz_678770/1206_679786/1206x0_679788/",
-      "checked": "2026-09-29"
-    },
-    {
-      "title": "Natural Earth disputed areas: Chinese viewpoint metadata",
-      "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_breakaway_disputed_areas.geojson",
-      "checked": "2026-09-29"
-    },
-    {
-      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/yz_676205/1206_676332/1206x0_676334/",
-      "description": "MFA Palestine profile (July 2026); country, West Bank/Gaza and Jerusalem context; checked 2026-09-29."
-    },
-    {
-      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/yz_676205/1206_677220/1206x0_677222/",
-      "description": "MFA India profile: area excludes China border occupied areas and India-controlled Kashmir; checked 2026-09-29."
-    },
-    {
-      "url": "https://www.fmprc.gov.cn/web/gjhdq_676201/gj_676203/yz_676205/1206_676308/1206x0_676310/",
-      "description": "MFA Pakistan profile: area excludes Pakistan-controlled Kashmir; checked 2026-09-29."
-    },
-    {
-      "url": "https://www.diaoyudao.org.cn/node_7217571.htm",
-      "description": "Chinese Diaoyu Dao site: territory attribution and eight island coordinates; checked 2026-09-29."
-    },
-    {
-      "url": "https://data.humdata.org/dataset/cod-ab-pse",
-      "description": "OCHA oPt/FISS State of Palestine COD-AB v01, reviewed 2024-12-24; used for geographic outline, not as a PRC reviewed map."
-    }
-  ],
   "countryNames": {
     "CHN": {
       "zh": "中国",

@@ -1145,15 +1145,14 @@ async function loadMap() {
           return `<path class="map-reference-border ${type}" data-boundary-type="${type}" data-source-id="${esc(feature.properties.NE_ID)}" d="${geometryPath(feature.geometry)}"></path>`;
         }).join('');
       } else {
-      const countryPath=feature=>`<path class="country-shape ${feature.properties?.MARK_KIND==='indicator'?'sovereignty-indicator':''} ${feature.properties?.MARK_STATUS==='disputed'?'disputed-area':''}" data-country-code="${esc(feature.properties?.MARK_COUNTRY||'')}" d="${geometryPath(feature.geometry)}"></path>`;
+      const countryPath=feature=>`<path class="country-shape ${feature.properties?.MARK_KIND==='indicator'?'reference-indicator':''} ${feature.properties?.MARK_STATUS==='disputed'?'disputed-area':''}" data-country-code="${esc(feature.properties?.MARK_COUNTRY||'')}" d="${geometryPath(feature.geometry)}"></path>`;
       const countryFeatures=geo.features.filter(feature=>!['region','island'].includes(feature.properties?.MARK_KIND));
       const countries=countryFeatures.filter(feature=>feature.properties?.MARK_COUNTRY!=='CHN').map(countryPath).join('');
       const disputed=geo.features.filter(feature=>feature.properties?.MARK_STATUS==='disputed').map(feature=>{
         const d=geometryPath(feature.geometry);
         return `<path class="disputed-boundary-halo" d="${d}"></path><path class="disputed-boundary" d="${d}"></path>`;
       }).join('');
-      // Use the previous country shape's regular border, without a second
-      // China-specific stroke. Paint it after the neighboring dashed halos.
+      // Draw this outline after the background strokes.
       const china=countryFeatures.filter(feature=>feature.properties?.MARK_COUNTRY==='CHN').map(countryPath).join('');
       $('#countryLayer').innerHTML = countries+disputed+china;
       }
@@ -2139,7 +2138,7 @@ async function loadMap() {
     '请重新查询或检查当前选站':'Query or check the selected set again',
     '国家/地区':'Country / region','选择国家/地区':'Select countries / areas',
     '全部国家/地区':'All countries / regions','应用国家/地区范围':'Apply country / region scope',
-    '可单选地区；选择所属国家时包含该地区。马尔维纳斯群岛不纳入阿根廷或英国筛选。':'Select a region directly; its parent country includes it. Malvinas Islands are excluded from Argentina and UK scopes.',
+    '可选择一个或多个国家/地区。':'Select one or more countries or regions.',
     '搜索国家/地区名称或代码，例如 格陵兰、GRL、DNK':'Search country / region name or code, e.g. Greenland, GRL, DNK',
     '不选择任何国家/地区时使用全球范围；经纬度条件仍可叠加。':'No country / region selection uses global scope; latitude and longitude can also apply.',
     '没有匹配的国家/地区':'No matching country / region',
@@ -2350,7 +2349,7 @@ async function loadMap() {
     '设置条件后点击“查询测站”':'Set filters, then click “Query stations”',
     '拖动平移':'Drag to pan','滚轮缩放':'Wheel to zoom','双击恢复':'Double-click to reset','等经纬投影':'Equirectangular projection','全球范围':'Global scope',
     '离线参考底图':'Offline reference map',
-    'Natural Earth 公有领域数据；等经纬投影。实线表示普通国界，虚线／点划线表示未定边界或控制线。仅参照联合国地图的边界表达方式，不是联合国官方底图，未获联合国背书。':'Natural Earth public-domain data; equirectangular projection. Solid lines show ordinary borders; dotted/dash-dot lines show undetermined borders or lines of control. The boundary notation follows the style of UN reference maps. This is not an official UN map or a UN-endorsed dataset.',
+    'Natural Earth 公有领域数据；等经纬投影。':'Natural Earth public-domain data; equirectangular projection.',
     '北极圈':'Arctic Circle','北回归线':'Tropic of Cancer','赤道':'Equator','南回归线':'Tropic of Capricorn','南极圈':'Antarctic Circle',
     '中国台湾':'Taiwan, China','中国':'China','美国':'United States','加拿大':'Canada','巴西':'Brazil','阿根廷':'Argentina','澳大利亚':'Australia','日本':'Japan','韩国':'South Korea','印度':'India','俄罗斯':'Russia','德国':'Germany','法国':'France','英国':'United Kingdom','意大利':'Italy','西班牙':'Spain','南非':'South Africa','墨西哥':'Mexico','土耳其':'Türkiye','埃及':'Egypt','沙特阿拉伯':'Saudi Arabia','伊朗':'Iran','印度尼西亚':'Indonesia','新西兰':'New Zealand'
     ,'本地知识库可用':'Local knowledge base available','本地知识库尚未收录':'Not indexed in the local knowledge base','没有匹配的数据源':'No matching data sources','请尝试其他站网名称':'Try another network name','本地可用':'locally available','个本地可用':'locally available','当前条件':'current conditions','当前结果':'current results','满足当前条件':'match the current conditions','数据源选择':'data-source selection','国家选择':'country selection','高级筛选':'Advanced filters','正在刷新':'Refreshing','刷新结果':'refresh results','候选项':'candidates','候选网':'candidate network','天':'days','年':'year','月':'month','范围':'range','条件':'conditions','完成':'Done','失败':'Failed','错误':'Error','未设置':'Not set','保存目录':'save folder','下载源':'download source','文件':'file','文件名':'filename','来源':'source','详情':'details','状态':'status','摘要':'summary','请选择':'Please select','请先':'Please first','暂无':'None','正在':'In progress','已提交':'Submitted','已应用':'Applied','已读取':'Read','已选择':'Selected','满足':'Matched','按日期':'Date-aware','快速':'Rapid','最终':'Final','预报':'Predicted','其他':'Other','机构':'Provider','等级':'Level','完整性':'Completeness','每日':'Daily','质量':'Quality','空间':'Spatial','日期':'Date','范围内':'within range','至少':'at least','最大':'maximum','最小':'minimum','成功':'Success','处理中':'Processing','已取消':'Cancelled','取消':'Cancel','继续':'Resume','暂停':'Pause','开始':'Start','下载':'Download','站号':'Station ID','站号 Z–A':'Station Z–A'

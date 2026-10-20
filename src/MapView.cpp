@@ -635,13 +635,7 @@ std::vector<CountryShape> ParseGeoJsonCountries(const std::string& json) {
                         [](const wchar_t character) {
                             return static_cast<wchar_t>(std::towupper(character));
                         });
-                    // Keep the island geometry visible, while presenting it
-                    // as "中国台湾" and canonicalizing its country code to
-                    // CHN in the map layer.
                     if (mapIso == L"TWN" || mapIso == L"ROC") {
-                        // Keep the island geometry visible, but present it in
-                        // the UI as part of China rather than as a separate
-                        // country entry.
                         country.name = L"中国台湾";
                         country.iso = L"CHN";
                     }
@@ -653,7 +647,6 @@ std::vector<CountryShape> ParseGeoJsonCountries(const std::string& json) {
                         if (JsonNumberProperty(object, "LABEL_X", longitude)
                             && JsonNumberProperty(object, "LABEL_Y", latitude)) {
                             // Internal repeated points provide label/symbol bounds.
-                            // They never provide a political or land surface.
                             country.rings = {{ {longitude, latitude}, {longitude, latitude}, {longitude, latitude} }};
                         }
                     }
@@ -1027,7 +1020,6 @@ void DrawCountryBoundaries(
     std::vector<const CountryShape*> ordered;
     for (const auto& country : state.countries) if (!country.disputed && country.iso != L"CHN") ordered.push_back(&country);
     for (const auto& country : state.countries) if (country.disputed) ordered.push_back(&country);
-    // Preserve China's prescribed outline above an adjacent unresolved-region halo.
     for (const auto& country : state.countries) if (!country.disputed && country.iso == L"CHN") ordered.push_back(&country);
     if (!EnsureGdiplus()) {
         const HPEN borderPen = CreatePen(

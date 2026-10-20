@@ -11241,12 +11241,7 @@ private:
     }
 
     static std::string DisplayStationAreaCode(const StationFile& station) {
-        // Keep the reference map's Palestine outline, while presenting
-        // stations inside it with the Israel label and flag requested here.
         if (DisplayAreaCode(station) == "PSE") return "ISR";
-        // HAMA's source country record was explicitly corrected to Israel.
-        // Keep all presentation surfaces in agreement while geographic scope
-        // continues to use DisplayAreaCode's coordinate-based area.
         if (station.fourCharId == "HAMA" && station.hasCoordinate
             && std::abs(station.latitude - 32.738028) < 0.02
             && std::abs(station.longitude - 35.654476) < 0.02) {
@@ -11279,8 +11274,6 @@ private:
     static bool MatchesCountryChoice(
         const StationFile& station, const std::string_view chosenCode) {
         const auto area = DisplayAreaCode(station);
-        // The Malvinas remain visible without a country restriction, but are
-        // deliberately outside both Argentina and UK picker scopes.
         if (area == "FLK") return false;
         if (CountryPolicy::SelectableRegionArea(chosenCode)) return area == chosenCode;
         return CountryFlags::Normalize(area) == chosenCode;
