@@ -84,3 +84,6 @@ The distributed knowledge bases are governed by [separate proprietary terms](KNO
 ## Feedback and contributions
 
 Questions, feedback, and research collaboration or contribution inquiries are welcome at **qi.liu@henu.edu.cn** or **Yuzhi.Zhang@henu.edu.cn**. You can also report problems through [GitHub Issues](https://github.com/qiliu2025/MARK/issues). When reporting an issue, please include the MARK version, relevant date range, observation source or product, and applicable files from `logs/`.
+
+For Chinese users, we provide Tencent QQ Group service.
+QQ group：1049702653
