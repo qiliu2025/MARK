@@ -43,7 +43,6 @@ The release includes **64 DuckDB knowledge bases**, with indexed data dates thro
 - **Precise-product discovery:** Search historical product series by category, provider, processing level, sampling interval, and availability over a selected period. Inspect date coverage and save multi-rule custom presets for repeated queries, including product preparation for PPP-AR and PPP-RTK applications.
 - **Automated file acquisition:** Generate download plans from matching historical file records and retrieve original files through supported **HTTPS, FTP, FTPS, and SFTP** routes. Separate observation and product tasks support concurrent transfers, pause/resume, retries, and alternative sources when available. Per-task results and completion summaries are saved in the download folder's `logs/` directory.
 
-MARK supports the **selection and acquisition of input resources** for GNSS research, including historical station-network studies, precise orbit determination, high-precision positioning, and ionospheric investigations. The software's role is resource preparation rather than performing the subsequent GNSS estimation or scientific analysis.
 
 ## Screenshots
 
