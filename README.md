@@ -33,7 +33,7 @@ The release includes **64 DuckDB knowledge bases**, with indexed data dates thro
 
 **Local queries work offline.** The knowledge bases contain historical resource records and metadata rather than copies of the original observation files and precise products. Downloading selected files requires network access to the original providers and any authorization required by those providers.
 
-**Reported performance:** In the tests described in the MARK manuscript, knowledge-base queries and download-list generation each took less than one second. These timings exclude the transfer of original files and apply to the reported test conditions.
+**Reported performance:** In the tests, knowledge-base queries and download-list generation each took less than one second. These timings exclude the transfer of original files and apply to the reported test conditions.
 
 ## Key capabilities
 
