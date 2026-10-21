@@ -124,7 +124,7 @@ enum class ObservationPresetSelection : int {
     ReferenceFrameAutomatic = 1,
     GimTec = 2,
     GimEvaluation = 3,
-    MultiGnssPod = 4,
+    BeiDouPod = 4,
     NetworkRtk = 5
 };
 
@@ -4147,7 +4147,7 @@ public:
             SendMessageW(quickScheme_, CB_ADDSTRING, 0,
                 reinterpret_cast<LPARAM>(L"GIM 评估（全数据源·100站·≥50 km）"));
             SendMessageW(quickScheme_, CB_ADDSTRING, 0,
-                reinterpret_cast<LPARAM>(L"多系统 POD（全球均匀 60 站）"));
+                reinterpret_cast<LPARAM>(L"北斗 POD（全球均匀 60 站）"));
             SendMessageW(quickScheme_, CB_ADDSTRING, 0,
                 reinterpret_cast<LPARAM>(L"Network RTK 候选网（区域组网）"));
             SendMessageW(quickScheme_, CB_SETCURSEL, 0, 0);
@@ -4970,11 +4970,9 @@ public:
             != std::wstring::npos) {
             const auto value = getJsonString(L"value");
             const int preset = value == L"wum" ? 1
-                : value == L"igs-final" ? 2
-                : value == L"upd" ? 3
-                : value == L"osb" ? 4
-                : value == L"network-rtk" ? 5
-                : value == L"auto-ppp" ? 6 : 0;
+                : value == L"upd" ? 2
+                : value == L"network-rtk" ? 3
+                : value == L"auto-ppp" ? 4 : 0;
             SetPreciseQuickPreset(preciseProductView_, preset);
             PostWebUiState();
             return;
@@ -5238,9 +5236,23 @@ public:
                 updJson = std::format(L"{{\"date\":\"{}\",\"fileName\":\"{}\",\"inputs\":{}}}",
                     JsonEscape(detail.updDate), JsonEscape(detail.updFile), inputs);
             }
+            std::wstring filesJson = L"[";
+            for (const auto& file : detail.files) {
+                if (filesJson.size() > 1) filesJson += L',';
+                filesJson += L"\"" + JsonEscape(file) + L"\"";
+            }
+            filesJson += L']';
+            std::wstring recordsJson=L"[";
+            for(const auto& record:detail.updRecords){
+                if(recordsJson.size()>1)recordsJson+=L',';
+                recordsJson+=std::format(L"{{\"date\":\"{}\",\"id\":\"{}\",\"fileName\":\"{}\",\"dcbFileName\":\"{}\",\"flagged\":{},\"selected\":{}}}",
+                    FormatDate(record.date),JsonEscape(record.logicalKey),JsonEscape(record.fileName),JsonEscape(record.dcbFileName),
+                    record.flagged?L"true":L"false",record.selected?L"true":L"false");
+            }
+            recordsJson+=L']';
             if (webUi_) webUi_->PostJson(std::format(
-                L"{{\"type\":\"product-coverage\",\"product\":\"{}\",\"request\":\"{}\",\"coverage\":{},\"antex\":{},\"upd\":{},\"error\":\"{}\"}}",
-                JsonEscape(detail.id), JsonEscape(getJsonString(L"request")), detail.json, detail.antexJson, updJson, JsonEscape(detail.error)));
+                L"{{\"type\":\"product-coverage\",\"product\":\"{}\",\"request\":\"{}\",\"coverage\":{},\"antex\":{},\"upd\":{},\"files\":{},\"updRecords\":{},\"error\":\"{}\"}}",
+                JsonEscape(detail.id), JsonEscape(getJsonString(L"request")), detail.json, detail.antexJson, updJson, filesJson, recordsJson, JsonEscape(detail.error)));
             return;
         }
         if (message.find(L"\"type\":\"sort-stations\"")
@@ -5935,6 +5947,15 @@ public:
                     product.completeness, JsonEscape(product.status),
                     product.localInventoryOnly ? L"true" : L"false",
                     product.selected ? L"true" : L"false");
+                if(product.recordCount>0){
+                    preciseProductsJson.pop_back();
+                    preciseProductsJson+=std::format(L",\"recordCount\":{},\"inventoryDays\":{},\"flaggedRecords\":{},\"flaggedDays\":{}}}",
+                        product.recordCount,product.inventoryDays,product.flaggedRecords,product.flaggedDays);
+                }
+                if (product.missingRequired) {
+                    preciseProductsJson.pop_back();
+                    preciseProductsJson += L",\"missingRequired\":true}";
+                }
             }
             preciseProductsJson += L']';
         }
@@ -6234,7 +6255,7 @@ public:
                     : observationPreset_ == ObservationPresetSelection::GimEvaluation
                         ? L"gim-evaluation"
                     : observationPreset_
-                            == ObservationPresetSelection::MultiGnssPod
+                            == ObservationPresetSelection::BeiDouPod
                         ? L"pod"
                         : observationPreset_
                                 == ObservationPresetSelection::NetworkRtk
@@ -6347,10 +6368,10 @@ public:
                 if (preciseQueueJson.size() > 1) preciseQueueJson += L',';
                 preciseQueueJson += std::format(
                     L"{{\"id\":\"{}\",\"label\":\"{}\",\"range\":\"{}\","
-                    L"\"status\":\"{}\",\"percent\":{},\"selected\":{}}}",
+                    L"\"status\":\"{}\",\"percent\":{},\"selected\":{},\"fileCount\":{}}}",
                     item.id, JsonEscape(item.label), JsonEscape(item.range),
                     item.status, item.percent,
-                    item.selected ? L"true" : L"false");
+                    item.selected ? L"true" : L"false",item.fileCount);
             }
         }
         preciseQueueJson += L']';
@@ -7843,381 +7864,111 @@ public:
 
     void ApplyQuickScheme() {
         if (quickScheme_ == nullptr) return;
-        const auto index = static_cast<int>(SendMessageW(
-            quickScheme_, CB_GETCURSEL, 0, 0));
-            ObservationPresetSelection preset = ObservationPresetSelection::None;
-            switch (index) {
-            case 1:
-                preset = ObservationPresetSelection::ReferenceFrameAutomatic;
-                break;
-            case 2:
-                preset = ObservationPresetSelection::GimTec;
-                break;
-            case 3:
-                preset = ObservationPresetSelection::GimEvaluation;
-                break;
-            case 4:
-                preset = ObservationPresetSelection::MultiGnssPod;
-                break;
-            case 5:
-                preset = ObservationPresetSelection::NetworkRtk;
-                break;
-            default:
-                break;
-            }
+        const auto index = static_cast<int>(SendMessageW(quickScheme_, CB_GETCURSEL, 0, 0));
+        ObservationPresetSelection preset = ObservationPresetSelection::None;
+        switch (index) {
+        case 1: preset = ObservationPresetSelection::ReferenceFrameAutomatic; break;
+        case 2: preset = ObservationPresetSelection::GimTec; break;
+        case 3: preset = ObservationPresetSelection::GimEvaluation; break;
+        case 4: preset = ObservationPresetSelection::BeiDouPod; break;
+        case 5: preset = ObservationPresetSelection::NetworkRtk; break;
+        default: break;
+        }
         observationPreset_ = preset;
-        selectionDailyMode_ = L"ignore";
-        advancedFilter_.dailyCoverageMode = DailyCoverageMode::Ignore;
-        quickFrameSelection_ = preset
-                == ObservationPresetSelection::ReferenceFrameAutomatic
-            ? ReferenceFrameSelection::Automatic
-            : ReferenceFrameSelection::None;
+        quickFrameSelection_ = preset == ObservationPresetSelection::ReferenceFrameAutomatic
+            ? ReferenceFrameSelection::Automatic : ReferenceFrameSelection::None;
         if (preset == ObservationPresetSelection::None) {
-            SetOperationStatusText(
-                L"已切换到普通观测查询方案。请按需选择站网和筛选条件。");
+            SetOperationStatusText(L"已切换到普通观测查询方案。请按需选择站网和筛选条件。");
             return;
         }
-        if (preset == ObservationPresetSelection::GimTec) {
-            // GIM/TEC is intentionally a small, reproducible preset.  It
-            // composes existing controls instead of introducing a second
-            // filtering path: global IGS+MGEX, daily 30-second data, GPS
-            // capability, and at least 245 stations available on each day.
-            for (const auto& [control, network] : NetworkControls()) {
-                SendMessageW(
-                    control,
-                    BM_SETCHECK,
-                    network == ObservationNetwork::Igs
-                            || network == ObservationNetwork::Mgex
-                        ? BST_CHECKED : BST_UNCHECKED,
-                    0);
-            }
-            MarkNetworkSelectionTouched();
-            advancedFilter_.completenessMode =
-                AdvancedFilterState::CompletenessMode::Ignore;
-            advancedFilter_.minimumCompletenessPercent = 0.0;
-            advancedFilter_.minimumAvailableDays = 0;
-            advancedFilter_.dailyCoverageMode = DailyCoverageMode::StationsAtLeast;
-            advancedFilter_.minimumDailyStations = 245;
-            advancedFilter_.minimumDailyStationPercent = 0.0;
-            advancedFilter_.sampleInterval = "30S";
-            advancedFilter_.rinexVersion = 0;
-            advancedFilter_.systemsInclude = "GPS";
-            advancedFilter_.systemsExclude.clear();
-            advancedFilter_.receiverInclude.clear();
-            advancedFilter_.receiverExclude.clear();
-            advancedFilter_.antennaInclude.clear();
-            advancedFilter_.antennaExclude.clear();
-            advancedFilter_.signalCodesInclude.clear();
-            advancedFilter_.signalCodesExclude.clear();
-            advancedFilter_.gimStationMode = "keep";
-            advancedFilter_.gimProviders = "IGS,CODE,ESA,JPL,UPC,CAS,EMR,WHU";
-            advancedFilter_.gimProductGrades.clear();
-            advancedFilter_.observationCompletenessEnabled = false;
-            advancedFilter_.latencyEnabled = false;
-            advancedFilter_.positionTimeSeriesEnabled = false;
-            advancedFilter_.residualsEnabled = false;
-            advancedFilter_.meanMultipathEnabled = false;
-            advancedFilter_.cycleSlipsEnabled = false;
-            // A GIM preset does not constrain Kp, Dst or F10.7 dates.
-            dateAdvancedFilter_ = {};
 
-            // Global extent is represented by empty geographic fields and an
-            // all-true in-memory scope.  Reset both so reapplying a preset
-            // after a previous map selection cannot retain stale bounds.
-            SendMessageW(scopeCountry_, CB_SETCURSEL, 0, 0);
-            for (const HWND control : {
-                     scopeLatitudeMinimum_, scopeLatitudeMaximum_,
-                     scopeLongitudeMinimum_, scopeLongitudeMaximum_}) {
-                SetWindowTextW(control, L"");
-            }
-            geographicScope_.assign(stations_.size(), true);
-            ApplyAdvancedFilterToScope();
-            SetWindowTextW(uniformCountEdit_, L"250");
-            // GIM station selection imposes no spacing constraints.  Clear
-            // values left over from a previous manual selection so they
-            // cannot accidentally restrict the preset's automatic choice.
-            SetWindowTextW(minimumDistanceEdit_, L"0");
-            SetWindowTextW(maximumNeighborDistanceEdit_, L"0");
-            UpdateAdvancedFilterButtonLabel();
-            UpdateDateAdvancedFilterButtonLabel();
-            UpdateKnowledgeBaseToggleLabel();
-            SetOperationStatusText(
-                L"已应用 GIM/TEC 全球电离层建模预设：IGS + MGEX、全球范围、"
-                L"30S、GPS、单站完整性不限制、每日覆盖至少245个测站，"
-                L"目标 250 个测站；最小站间距和最大相邻距离不限制，"
-                L"RINEX、接收机、天线和频点不限制。点击“开始查询”后"
-                L"将自动按全球均匀规则选择最多250个测站。");
-            if (!stations_.empty()) {
-                PopulateStationList();
-                MapViewRefresh(map_);
-            }
-            return;
-        }
-        if (preset == ObservationPresetSelection::GimEvaluation) {
-            // Independent GIM evaluation uses a held-out station set: the
-            // station must not appear in any of the eight analysis centres'
-            // daily GIM station lists over the requested date range.  Keep
-            // the same GPS/30-second observation convention as the GIM/TEC
-            // preset, but require a stable 90% date-range availability,
-            // Preserve every evaluation date and choose one fixed 50-station
-            // set with >=35 confirmed available stations on every date.
-            for (const auto& [control, network] : NetworkControls()) {
-                SendMessageW(
-                    control,
-                    BM_SETCHECK,
-                    HasNetwork(knowledgeBaseNetworks_, network)
-                        ? BST_CHECKED : BST_UNCHECKED,
-                    0);
-            }
-            MarkNetworkSelectionTouched();
-            advancedFilter_.completenessMode =
-                AdvancedFilterState::CompletenessMode::RatioAtLeast;
-            advancedFilter_.minimumCompletenessPercent = 90.0;
-            advancedFilter_.minimumAvailableDays = 0;
-            advancedFilter_.dailyCoverageMode = DailyCoverageMode::Ignore;
-            advancedFilter_.minimumDailyStations = 0;
-            selectionDailyMode_ = L"stations";
-            selectionDailyStations_ = 35;
-            advancedFilter_.minimumDailyStationPercent = 0.0;
-            advancedFilter_.sampleInterval = "30S";
-            advancedFilter_.rinexVersion = 3;
-            advancedFilter_.systemsInclude = "GPS";
-            advancedFilter_.systemsExclude.clear();
-            advancedFilter_.receiverInclude.clear();
-            advancedFilter_.receiverExclude.clear();
-            advancedFilter_.antennaInclude.clear();
-            advancedFilter_.antennaExclude.clear();
-            advancedFilter_.signalCodesInclude.clear();
-            advancedFilter_.signalCodesExclude.clear();
-            advancedFilter_.gimStationMode = "exclude";
-            advancedFilter_.gimProviders =
-                "IGS,CODE,ESA,JPL,UPC,CAS,EMR,WHU";
-            advancedFilter_.gimProductGrades.clear();
-            advancedFilter_.observationCompletenessEnabled = false;
-            advancedFilter_.latencyEnabled = false;
-            advancedFilter_.positionTimeSeriesEnabled = false;
-            advancedFilter_.residualsEnabled = false;
-            advancedFilter_.meanMultipathEnabled = false;
-            advancedFilter_.cycleSlipsEnabled = false;
-            dateAdvancedFilter_ = {};
-
-            SendMessageW(scopeCountry_, CB_SETCURSEL, 0, 0);
-            for (const HWND control : {
-                     scopeLatitudeMinimum_, scopeLatitudeMaximum_,
-                     scopeLongitudeMinimum_, scopeLongitudeMaximum_}) {
-                SetWindowTextW(control, L"");
-            }
-            geographicScope_.assign(stations_.size(), true);
-            ApplyAdvancedFilterToScope();
-            SetWindowTextW(uniformCountEdit_, L"50");
-            SetWindowTextW(minimumDistanceEdit_, L"50");
-            SetWindowTextW(maximumNeighborDistanceEdit_, L"0");
-            UpdateAdvancedFilterButtonLabel();
-            UpdateDateAdvancedFilterButtonLabel();
-            UpdateKnowledgeBaseToggleLabel();
-            SetOperationStatusText(
-                L"已应用 GIM 评估预设：选择全部本地可用观测数据源，"
-                L"GPS、30S、RINEX 3/4，单站日期范围完整率至少90%，"
-                L"选站集合每日已确认可用站不少于35；排除八个机构在当前日期范围内"
-                L"用于 GIM 建模的测站，按至少50 km间距全球均匀选择固定50站。"
-                L"点击“高级测站筛选”可查看或调整机构范围。");
-            if (!stations_.empty()) {
-                PopulateStationList();
-                MapViewRefresh(map_);
-            }
-            return;
-        }
-        if (preset == ObservationPresetSelection::MultiGnssPod) {
-            // The POD plan mirrors the station-network configuration
-            // validated by Jin et al. (Remote Sensing 2025, 17, 3548): a
-            // globally distributed 60-station, four-constellation network.
-            // Daily 30-second RINEX 3/4 files are retained for download; a
-            // POD processor can decimate them to the paper's 300-second
-            // processing interval without losing the original observations.
-            for (const auto& [control, network] : NetworkControls()) {
-                SendMessageW(
-                    control,
-                    BM_SETCHECK,
-                    network == ObservationNetwork::Igs
-                            || network == ObservationNetwork::Mgex
-                        ? BST_CHECKED : BST_UNCHECKED,
-                    0);
-            }
-            MarkNetworkSelectionTouched();
-            advancedFilter_.completenessMode =
-                AdvancedFilterState::CompletenessMode::Ignore;
-            advancedFilter_.minimumCompletenessPercent = 0.0;
-            advancedFilter_.minimumAvailableDays = 0;
-            advancedFilter_.dailyCoverageMode = DailyCoverageMode::Ignore;
-            advancedFilter_.minimumDailyStations = 0;
-            advancedFilter_.minimumDailyStationPercent = 0.0;
-            advancedFilter_.sampleInterval = "30S";
-            advancedFilter_.rinexVersion = 3;
-            advancedFilter_.systemsInclude = "GPS;GLO;GAL;BDS";
-            advancedFilter_.systemsExclude.clear();
-            advancedFilter_.receiverInclude.clear();
-            advancedFilter_.receiverExclude.clear();
-            advancedFilter_.antennaInclude.clear();
-            advancedFilter_.antennaExclude.clear();
-            advancedFilter_.signalCodesInclude.clear();
-            advancedFilter_.signalCodesExclude.clear();
-            advancedFilter_.gimStationMode = "ignore";
-            advancedFilter_.gimProviders.clear();
-            advancedFilter_.gimProductGrades.clear();
-            // Observation completeness is the one IGS CORS numerical data
-            // quality recommendation that the current query engine applies
-            // with matching units.  Multipath-per-constellation and cycle
-            // slips-per-1000-observations are deliberately not approximated
-            // with the UI's current mean fields.
-            advancedFilter_.observationCompletenessEnabled = true;
-            advancedFilter_.minimumObservationCompletenessPercent = 95.0;
-            advancedFilter_.latencyEnabled = false;
-            advancedFilter_.positionTimeSeriesEnabled = false;
-            advancedFilter_.residualsEnabled = false;
-            advancedFilter_.meanMultipathEnabled = false;
-            advancedFilter_.cycleSlipsEnabled = false;
-            dateAdvancedFilter_ = {};
-
-            SendMessageW(scopeCountry_, CB_SETCURSEL, 0, 0);
-            for (const HWND control : {
-                     scopeLatitudeMinimum_, scopeLatitudeMaximum_,
-                     scopeLongitudeMinimum_, scopeLongitudeMaximum_}) {
-                SetWindowTextW(control, L"");
-            }
-            geographicScope_.assign(stations_.size(), true);
-            ApplyAdvancedFilterToScope();
-            SetWindowTextW(uniformCountEdit_, L"60");
-            SetWindowTextW(minimumDistanceEdit_, L"0");
-            SetWindowTextW(maximumNeighborDistanceEdit_, L"0");
-            UpdateAdvancedFilterButtonLabel();
-            UpdateDateAdvancedFilterButtonLabel();
-            UpdateKnowledgeBaseToggleLabel();
-            SetOperationStatusText(
-                L"已应用多系统 POD 预设：IGS + MGEX、全球范围、30S、"
-                L"RINEX 3/4、GPS + GLONASS + Galileo + BDS、每日观测完整率"
-                L"至少95%，目标60站；查询完成后将自动按全球均匀规则选站。"
-                L"30S文件可在POD处理中降采样到300S。" );
-            if (!stations_.empty()) {
-                PopulateStationList();
-                MapViewRefresh(map_);
-            }
-            return;
-        }
-        if (preset == ObservationPresetSelection::NetworkRtk) {
-            // This is a one-layer historical-data candidate preset.  It uses
-            // the locally indexed 30-second archives that are available for
-            // most networks, then lets the user delimit the service region
-            // and grow one connected candidate network with a 75 km maximum
-            // neighbour distance.  Real-time service capabilities are not
-            // inferred from daily RINEX availability.
-            for (const auto& [control, network] : NetworkControls()) {
-                SendMessageW(
-                    control,
-                    BM_SETCHECK,
-                    HasNetwork(knowledgeBaseNetworks_, network)
-                        ? BST_CHECKED : BST_UNCHECKED,
-                    0);
-            }
-            MarkNetworkSelectionTouched();
-            advancedFilter_.completenessMode =
-                AdvancedFilterState::CompletenessMode::Ignore;
-            advancedFilter_.minimumCompletenessPercent = 0.0;
-            advancedFilter_.minimumAvailableDays = 0;
-            advancedFilter_.dailyCoverageMode = DailyCoverageMode::Ignore;
-            advancedFilter_.minimumDailyStations = 0;
-            advancedFilter_.minimumDailyStationPercent = 0.0;
-            advancedFilter_.sampleInterval = "30S";
-            advancedFilter_.rinexVersion = 3;
-            advancedFilter_.systemsInclude = "GPS;GLO";
-            advancedFilter_.systemsExclude.clear();
-            advancedFilter_.receiverInclude.clear();
-            advancedFilter_.receiverExclude.clear();
-            advancedFilter_.antennaInclude.clear();
-            advancedFilter_.antennaExclude.clear();
-            advancedFilter_.signalCodesInclude.clear();
-            advancedFilter_.signalCodesExclude.clear();
-            advancedFilter_.gimStationMode = "ignore";
-            advancedFilter_.gimProviders.clear();
-            advancedFilter_.gimProductGrades.clear();
-            // The six-value IGS quality knowledge base does not cover most
-            // regional-network stations, so applying it here would incorrectly
-            // reject otherwise usable RTK candidates.
-            advancedFilter_.observationCompletenessEnabled = false;
-            advancedFilter_.latencyEnabled = false;
-            advancedFilter_.positionTimeSeriesEnabled = false;
-            advancedFilter_.residualsEnabled = false;
-            advancedFilter_.meanMultipathEnabled = false;
-            advancedFilter_.cycleSlipsEnabled = false;
-            dateAdvancedFilter_ = {};
-            ApplyAdvancedFilterToScope();
-            SetWindowTextW(minimumDistanceEdit_, L"0");
-            SetWindowTextW(maximumNeighborDistanceEdit_, L"75");
-            UpdateAdvancedFilterButtonLabel();
-            UpdateDateAdvancedFilterButtonLabel();
-            UpdateKnowledgeBaseToggleLabel();
-            SetOperationStatusText(
-                L"已应用 Network RTK 候选网预设：全部本地数据源、30S、"
-                L"RINEX 3/4、GPS + GLONASS，最大邻站距离75 km。请先用"
-                L"国家、经纬度或地图框选限定服务区域，并填写目标数量；"
-                L"查询后点击“均匀选站”。本预设使用30秒历史观测文件筛选"
-                L"候选测站，不代表已验证NTRIP、RTCM、实时在线率、数据"
-                L"延迟或站址环境。" );
-            if (!stations_.empty()) {
-                PopulateStationList();
-                MapViewRefresh(map_);
-            }
-            return;
-        }
-        // IGS reference-frame observations are conventionally processed as
-        // daily 30-second RINEX 3 files.  Keep this preset reversible: the
-        // advanced dialog can still override the values afterwards.
-        for (const auto& [control, network] : NetworkControls()) {
-            SendMessageW(control, BM_SETCHECK,
-                network == ObservationNetwork::Igs
-                    ? BST_CHECKED : BST_UNCHECKED, 0);
-        }
-        MarkNetworkSelectionTouched();
+        // Each task starts from a complete filter snapshot. User dates remain unchanged.
+        advancedFilter_ = {};
+        dateAdvancedFilter_ = {};
         advancedFilter_.sampleInterval = "30S";
         advancedFilter_.rinexVersion = 3;
-        advancedFilter_.completenessMode =
-            AdvancedFilterState::CompletenessMode::Ignore;
-        advancedFilter_.dailyCoverageMode = DailyCoverageMode::Ignore;
-        advancedFilter_.minimumDailyStations = 0;
-        advancedFilter_.minimumDailyStationPercent = 0.0;
-        advancedFilter_.systemsInclude.clear();
-        advancedFilter_.systemsExclude.clear();
-        advancedFilter_.receiverInclude.clear();
-        advancedFilter_.receiverExclude.clear();
-        advancedFilter_.antennaInclude.clear();
-        advancedFilter_.antennaExclude.clear();
-        advancedFilter_.signalCodesInclude.clear();
-        advancedFilter_.signalCodesExclude.clear();
-        advancedFilter_.gimStationMode = "ignore";
-        advancedFilter_.gimProviders.clear();
-        advancedFilter_.gimProductGrades.clear();
-        advancedFilter_.observationCompletenessEnabled = false;
-        advancedFilter_.latencyEnabled = false;
-        advancedFilter_.positionTimeSeriesEnabled = false;
-        advancedFilter_.residualsEnabled = false;
-        advancedFilter_.meanMultipathEnabled = false;
-        advancedFilter_.cycleSlipsEnabled = false;
-        dateAdvancedFilter_ = {};
-        SendMessageW(scopeCountry_, CB_SETCURSEL, 0, 0);
-        for (const HWND control : {
-                 scopeLatitudeMinimum_, scopeLatitudeMaximum_,
-                 scopeLongitudeMinimum_, scopeLongitudeMaximum_}) {
-            SetWindowTextW(control, L"");
+        advancedFilter_.completenessMode = AdvancedFilterState::CompletenessMode::RatioAtLeast;
+        advancedFilter_.minimumCompletenessPercent = 95.0;
+        advancedFilter_.systemsInclude = "GPS";
+        selectionDailyMode_ = L"ignore";
+        selectionDailyStations_ = 0;
+        selectionDailyPercent_ = 0.0;
+        SetWindowTextW(minimumDistanceEdit_, L"0");
+        SetWindowTextW(maximumNeighborDistanceEdit_, L"0");
+
+        const bool regional = preset == ObservationPresetSelection::NetworkRtk;
+        const bool allSources = regional || preset == ObservationPresetSelection::GimEvaluation;
+        const bool reference = preset == ObservationPresetSelection::ReferenceFrameAutomatic;
+        for (const auto& [control, network] : NetworkControls()) {
+            const bool enabled = allSources ? HasNetwork(knowledgeBaseNetworks_, network)
+                : network == ObservationNetwork::Igs || (!reference && network == ObservationNetwork::Mgex);
+            SendMessageW(control, BM_SETCHECK, enabled ? BST_CHECKED : BST_UNCHECKED, 0);
         }
-        geographicScope_.assign(stations_.size(), true);
+        MarkNetworkSelectionTouched();
+        if (!regional) {
+            webSelectedCountryCodes_.clear();
+            SendMessageW(scopeCountry_, CB_SETCURSEL, 0, 0);
+            for (const HWND control : {scopeLatitudeMinimum_, scopeLatitudeMaximum_,
+                     scopeLongitudeMinimum_, scopeLongitudeMaximum_}) SetWindowTextW(control, L"");
+            geographicScope_.assign(stations_.size(), true);
+        }
+
+        std::wstring message;
+        if (reference) {
+            message = L"已应用参考框架预设：官方核心站、GPS、30S、RINEX 3/4、日期覆盖至少95%；不固定测站数量。";
+        } else if (preset == ObservationPresetSelection::GimTec) {
+            advancedFilter_.gimStationMode = "keep";
+            advancedFilter_.gimProviders = "IGS,CODE,ESA,JPL,UPC,CAS,EMR,WHU";
+            selectionDailyMode_ = L"stations";
+            selectionDailyStations_ = 245;
+            SetWindowTextW(uniformCountEdit_, L"250");
+            SetWindowTextW(minimumDistanceEdit_, L"10");
+            message = L"已应用 GIM 相关测站预设：IGS + MGEX、GPS、30S、RINEX 3/4、日期覆盖至少95%；均匀选择250站，间距至少10 km，每天至少245站可用。";
+        } else if (preset == ObservationPresetSelection::GimEvaluation) {
+            advancedFilter_.minimumCompletenessPercent = 90.0;
+            advancedFilter_.gimStationMode = "exclude";
+            advancedFilter_.gimProviders = "IGS,CODE,ESA,JPL,UPC,CAS,EMR,WHU";
+            selectionDailyMode_ = L"stations";
+            selectionDailyStations_ = 35;
+            SetWindowTextW(uniformCountEdit_, L"50");
+            SetWindowTextW(minimumDistanceEdit_, L"50");
+            message = L"已应用 GIM 独立评估预设：GPS、30S、RINEX 3/4、日期覆盖至少90%；排除所选机构在整个区间使用过的测站，均匀选择50站，间距至少50 km，每天至少35站可用。建议评估区间为三至四年。";
+        } else if (preset == ObservationPresetSelection::BeiDouPod) {
+            advancedFilter_.minimumCompletenessPercent = 100.0;
+            advancedFilter_.systemsInclude = "BDS";
+            advancedFilter_.signalCodesInclude = "BDS:C2I;BDS:L2I;BDS:C6I;BDS:L6I";
+            advancedFilter_.observationCompletenessEnabled = true;
+            advancedFilter_.minimumObservationCompletenessPercent = 90.0;
+            advancedFilter_.observationCompletenessSystem = "BDS";
+            advancedFilter_.meanMultipathEnabled = true;
+            advancedFilter_.maximumMeanMultipathCentimeters = 30.0;
+            advancedFilter_.multipathSystem = "BDS";
+            selectionDailyMode_ = L"stations";
+            selectionDailyStations_ = 60;
+            SetWindowTextW(uniformCountEdit_, L"60");
+            SetWindowTextW(minimumDistanceEdit_, L"300");
+            message = L"已应用北斗 POD 预设：IGS + MGEX、30S、RINEX 3/4、BDS B1I/B3I双频伪距和相位；北斗每日完整率至少90%、平均 RMS 多路径不超过30 cm，合格日期覆盖100%；均匀选择60站，间距至少300 km。建议先使用7至10天区间。";
+        } else if (regional) {
+            advancedFilter_.minimumCompletenessPercent = 90.0;
+            advancedFilter_.rinexVersion = 0;
+            advancedFilter_.systemsInclude.clear();
+            selectionDailyMode_ = L"percent";
+            selectionDailyPercent_ = 80.0;
+            SetWindowTextW(uniformCountEdit_, L"30");
+            SetWindowTextW(minimumDistanceEdit_, L"20");
+            SetWindowTextW(maximumNeighborDistanceEdit_, L"75");
+            message = L"已应用区域 RTK 候选预设：全部本地数据源、30S、日期覆盖至少90%；默认不限版本和系统。请选择区域；默认30站、间距至少20 km、最大连边75 km，每天至少80%的目标站数可用。系统元数据缺失不代表满足指定系统要求。";
+        }
         ApplyAdvancedFilterToScope();
+        if (regional && !stations_.empty()) ApplyScopeFromControls(false);
         UpdateAdvancedFilterButtonLabel();
         UpdateDateAdvancedFilterButtonLabel();
-        SetOperationStatusText(
-            L"已应用 IGS/ITRF 参考框架方案："
-            L"按日期自动选择 IGS14、IGb14、IGS20、IGb20 或 IGc20，"
-            L"官方核心测站、30S、RINEX 3；"
-            L"点击“开始查询”查看可用观测日期。");
         UpdateKnowledgeBaseToggleLabel();
+        SetOperationStatusText(message);
+        if (!stations_.empty()) {
+            PopulateStationList();
+            MapViewRefresh(map_);
+        }
     }
 
     void StartQuery() {
@@ -8763,9 +8514,11 @@ public:
         for (auto& station : stations_) CorrectKnownStationCoordinates(station);
         webSortAscending_ = false;
         webSortByCompleteness_ = true;
-        ResetScopeControls();
+        if (observationPreset_ != ObservationPresetSelection::NetworkRtk) ResetScopeControls();
+        else geographicScope_.assign(stations_.size(), true);
         ApplyAdvancedFilterToScope();
         PopulateCountryChoices();
+        if (observationPreset_ == ObservationPresetSelection::NetworkRtk) ApplyScopeFromControls(false);
         PopulateStationList();
         MapViewSetStations(map_, &stations_);
         MapViewResetView(map_);
@@ -8809,7 +8562,7 @@ public:
         if ((observationPreset_ == ObservationPresetSelection::GimTec
                 || observationPreset_ == ObservationPresetSelection::GimEvaluation
                 || observationPreset_
-                    == ObservationPresetSelection::MultiGnssPod)
+                    == ObservationPresetSelection::BeiDouPod)
             && !stations_.empty()) {
             SelectGloballyDistributed(false);
         }

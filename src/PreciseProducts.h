@@ -40,6 +40,15 @@ struct PreciseProductMirror {
     std::wstring fileName;
 };
 
+struct PreciseUpdFileRecord {
+    QueryDate date{};
+    std::wstring logicalKey;
+    std::wstring fileName;
+    std::wstring dcbFileName;
+    bool flagged = false;
+    bool selected = false;
+};
+
 struct PreciseProductFile {
     std::wstring id;
     std::wstring name;
@@ -60,6 +69,10 @@ struct PreciseProductFile {
     double completenessPercent = 0.0;
     // ANTEX/RINEX format metadata is independent of sampling interval.
     std::wstring formatVersion;
+    std::vector<PreciseUpdFileRecord> updRecords;
+    // A preset requirement with no matching records in the displayed range.
+    // It has no files or routes and cannot be selected for download.
+    bool missingRequired = false;
 };
 
 std::vector<PreciseProductFile> BuildPreciseProductCatalog(

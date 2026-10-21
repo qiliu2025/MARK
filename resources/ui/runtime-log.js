@@ -3,6 +3,10 @@
   // Match complete native messages before applying UI label translations.
   // Numbered fields retain counts, identifiers and user-supplied values.
   const messageTemplates = [
+    ['UPD 索引记录已列出，尚未配置在线下载地址。', 'UPD inventory records are listed; online download URLs are not configured.'],
+    ['UPD 声明 {0}；方案使用 IGS20 文件 {1}。', 'UPD declares {0}; the preset uses the IGS20 file {1}.'],
+    ['CLK 的 ANTEX 版本有 {0} 天未确认', 'The ANTEX version referenced by CLK is unconfirmed on {0} days'],
+    ['清单保留可用候选文件，需核对模型。', 'Available candidates are listed; verify the calibration model.'],
     ['候选范围：{0} / {1} 个测站（{2} 个有坐标）。', 'Candidate scope: {0} / {1} stations ({2} with coordinates).'],
     ['候选范围：{0} / {1} 个测站（{2} 个有坐标）；已取消范围外 {3} 个选择。', 'Candidate scope: {0} / {1} stations ({2} with coordinates); deselected {3} outside the scope.'],
     ['候选范围：全部 {0} 个测站。', 'Candidate scope: all {0} stations.'],
@@ -48,8 +52,51 @@
     }).join('');
     return { pattern:new RegExp('^'+pattern.replace(/。$/,'[。.]?')+'$'), english, keys, fields };
   });
+  function parseBundleReport(value) {
+    const match = /^方案：([^；]+)；范围：(\d{4}-\d{2}-\d{2}) 至 (\d{4}-\d{2}-\d{2})；(?:整套|核心)完整 (\d+)\/(\d+) 天([\s\S]*)$/.exec(String(value).trim());
+    if (!match) return null;
+    const complete = Number(match[4]), total = Number(match[5]);
+    return { name:match[1], start:match[2], end:match[3], complete, total,
+      incomplete:complete < total, review:/兼容性提示|索引提示|兼容性待核对/.test(match[6]),
+      warning:complete < total || /兼容性提示|索引提示|兼容性待核对|没有找到可下载|有问题的 UPD/.test(match[6]) };
+  }
+  function summarizeMessage(value, language = 'en', translate = text => text) {
+    const report = parseBundleReport(value);
+    if (!report) return null;
+    const count = `${report.complete}/${report.total}`;
+    const note = report.incomplete ? (language === 'en' ? '; products missing' : '，存在缺项')
+      : report.warning ? (language === 'en' ? '; check product notes' : '，请核对产品说明') : '';
+    return language === 'en' ? `${translate(report.name)}: ${count} days complete${note}.`
+      : `${report.name}：整套完整 ${count} 天${note}。`;
+  }
   function translateMessage(value, translate = text => text) {
     const raw = String(value).trim();
+    const dayCount = /^(\d+)\s*\/\s*(\d+)\s*天$/.exec(raw);
+    if (dayCount) return `${dayCount[1]}/${dayCount[2]} days`;
+    const bundle = /^方案：([^；]+)；范围：(\d{4}-\d{2}-\d{2}) 至 (\d{4}-\d{2}-\d{2})；(?:整套|核心)完整 (\d+)\/(\d+) 天([\s\S]*)$/.exec(raw);
+    if (bundle) {
+      const clause = value => {
+        const text = value.trim();
+        let extra = /^辅助完整 (\d+)\/(\d+) 天$/.exec(text);
+        if (extra) return `Auxiliary products complete on ${extra[1]}/${extra[2]} days`;
+        extra = /^有问题的 UPD (\d+) 条，默认不选取$/.exec(text);
+        if (extra) return `${extra[1]} flagged UPD records excluded by default`;
+        let match = /^(\d{4}-\d{2}-\d{2}(?:—\d{4}-\d{2}-\d{2})?) 缺 (.+)$/.exec(text);
+        if (match) return `${match[1]} missing ${match[2]}`;
+        match = /^(缺口|兼容性提示|索引提示)：([\s\S]*)$/.exec(text);
+        if (match) return `${{'缺口':'Gaps','兼容性提示':'Compatibility notice','索引提示':'Index notice'}[match[1]]}: ${clause(match[2])}`;
+        match = /^另 (\d+) 段，详见清单完整率$/.exec(text);
+        if (match) return `${match[1]} more intervals; see coverage in the product list`;
+        match = /^([\s\S]+)（另 (\d+) 条）$/.exec(text);
+        if (match) return `${clause(match[1])} (${match[2]} more notices)`;
+        const action = {'清单显示各产品完整率':'The list shows coverage for each product',
+          '兼容性待核对，不能直接下载。':'Verify compatibility before downloading.',
+          '没有找到可下载的文件。':'No downloadable files were found.'};
+        return action[text] || translate(text);
+      };
+      const tail = bundle[6].split('；').filter(Boolean).map(clause);
+      return `Preset: ${translate(bundle[1])}; range: ${bundle[2]} to ${bundle[3]}; complete bundles ${bundle[4]}/${bundle[5]} days${tail.length ? '; '+tail.join('; ') : ''}`;
+    }
     if (/^\d{4}-\d{2}-\d{2}(?:\s*至\s*\d{4}-\d{2}-\d{2})?(?:\s*[、；;]\s*\d{4}-\d{2}-\d{2}(?:\s*至\s*\d{4}-\d{2}-\d{2})?)*$/.test(raw))
       return raw.replace(/\s*至\s*/g, ' to ').replace(/[、；]/g, '; ');
     const lines = raw.split(/\s*(?:\r?\n|\s+(?=日期筛选：|保留日期：))\s*/).filter(Boolean);
@@ -191,8 +238,11 @@
       const terminal = /下载(?:结束|完成)|任务(?:已)?(?:完成|取消)|已取消|下载已取消|查询完成|^方案[:：]/i.test(text);
       const errorText = text.replace(/^部分来源未完成[:：]\s*/, '')
         .replace(/失败[ ：:]*0(?=[ ，,。；;]|$)/g, '');
-      const warning = kind === 'warning' || /失败|错误|无法|未找到|未完成|缺少|尚未|没有|请先|error|warning/i.test(errorText);
-      if (warning) kind = 'warning';
+      const bundle = parseBundleReport(text);
+      const warning = bundle ? bundle.warning : kind === 'warning' || /失败|错误|无法|未找到|未完成|缺少|尚未|没有|请先|error|warning/i.test(errorText);
+      // A query result is classified by its coverage, independent of download instructions.
+      if (bundle) kind = warning ? 'warning' : 'notice';
+      else if (warning) kind = 'warning';
       const file = /\.(?:gz|Z|bz2|zip|crx|rnx|sp3|clk|atx|snx|obx|bia)\b|\.[0-9]{2}[odngp]\b/i.test(text);
       // Progress belongs in the task dock; history records results and errors.
       if (!terminal && !warning && (options.progress || file && options.busy)) return null;
@@ -213,7 +263,7 @@
       const fullText = text;
       const limit = kind === 'warning' ? 360 : 260;
       if (text.length > limit) text = text.slice(0, limit-1)+'…';
-      const fingerprint = stream+'|'+kind+'|'+text;
+      const fingerprint = stream+'|'+kind+'|'+(bundle ? fullText : text);
       const previous = recent.get(fingerprint);
       if (previous !== undefined && now-previous < 15000) return null;
       recent.set(fingerprint, now);
@@ -222,7 +272,7 @@
     }
     return { consider };
   }
-  const api = { create, translateDiagnostic, translateMessage };
+  const api = { create, translateDiagnostic, translateMessage, parseBundleReport, summarizeMessage };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.GnssRuntimeLog = api;
 })(typeof window === 'object' ? window : globalThis);

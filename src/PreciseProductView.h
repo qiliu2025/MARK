@@ -1,6 +1,7 @@
 #pragma once
 
 #include <windows.h>
+#include "PreciseProducts.h"
 
 #include <cstdint>
 #include <string>
@@ -39,6 +40,8 @@ struct PreciseUiCoverageSnapshot {
     std::wstring updDate;
     std::wstring updFile;
     std::vector<std::wstring> updInputFiles;
+    std::vector<std::wstring> files;
+    std::vector<PreciseUpdFileRecord> updRecords;
     std::wstring error;
 };
 bool QueryPreciseProductCoverage(HWND view, PreciseUiCoverageSnapshot& snapshot) noexcept;
@@ -50,6 +53,7 @@ struct PreciseUiQueueItemSnapshot {
     std::wstring status;
     int percent = 0;
     bool selected = false;
+    int fileCount = 0;
 };
 
 struct PreciseUiProductSnapshot {
@@ -69,8 +73,13 @@ struct PreciseUiProductSnapshot {
     int completeness = 0;
     int availableDays = 0;
     int expectedDays = 0;
+    int recordCount = 0;
+    int inventoryDays = 0;
+    int flaggedRecords = 0;
+    int flaggedDays = 0;
     bool selected = false;
     bool localInventoryOnly = false;
+    bool missingRequired = false;
 };
 
 struct PreciseUiRuleOption {

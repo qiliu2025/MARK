@@ -715,6 +715,51 @@ bool StoreSinexWeek(const int gpsWeek,
     return true;
 }
 
+static void ReadSinexRows(sqlite3_stmt* productRows, sqlite3_stmt* routeRows, SinexAvailabilityLookup& result) {
+    while (sqlite3_step(productRows) == SQLITE_ROW) {
+        SinexProductRecord record;
+        record.logicalKey = ColumnText(productRows, 0);
+        const auto parseDate = [](const std::string& text) {
+            int year = 0;
+            int month = 0;
+            int day = 0;
+            if (sscanf_s(text.c_str(), "%d-%d-%d",
+                    &year, &month, &day) != 3) return QueryDate{};
+            return MakeQueryDate(year, month, day);
+        };
+        record.nominalDate = parseDate(ColumnText(productRows, 1));
+        record.coverageStart = parseDate(ColumnText(productRows, 2));
+        record.coverageEnd = parseDate(ColumnText(productRows, 3));
+        record.startHour = sqlite3_column_int(productRows, 4);
+        record.startMinute = sqlite3_column_int(productRows, 5);
+        record.series = ColumnText(productRows, 6);
+        record.streamCode = ColumnText(productRows, 7);
+        record.center = ColumnText(productRows, 8);
+        record.project = ColumnText(productRows, 9);
+        record.solution = ColumnText(productRows, 10);
+        record.latency = ColumnText(productRows, 11);
+        record.duration = ColumnText(productRows, 12);
+        record.interval = ColumnText(productRows, 13);
+        record.contentType = ColumnText(productRows, 14);
+        record.format = ColumnText(productRows, 15);
+        record.productClass = ColumnText(productRows, 16);
+        sqlite3_reset(routeRows);
+        sqlite3_clear_bindings(routeRows);
+        if (!Bind(routeRows, 1, record.logicalKey)) {
+            result.products.clear();
+            return;
+        }
+        while (sqlite3_step(routeRows) == SQLITE_ROW) {
+            record.routes.push_back({ColumnText(routeRows, 0),
+                sqlite3_column_int(routeRows, 1),
+                ColumnText(routeRows, 2),
+                Utf8ToWide(ColumnText(routeRows, 3)),
+                ColumnText(routeRows, 4)});
+        }
+        result.products.push_back(std::move(record));
+    }
+}
+
 SinexAvailabilityLookup LoadSinexAvailability(const QueryDate& date) {
     std::scoped_lock lock(gSinexDatabaseMutex);
     SinexAvailabilityLookup result;
@@ -750,48 +795,7 @@ SinexAvailabilityLookup LoadSinexAvailability(const QueryDate& date) {
         "SELECT d.source_key,d.source_priority,s.file_name,s.download_url,s.archive_class FROM product_sources s JOIN source_definitions d ON d.source_id=s.source_id WHERE s.logical_key=?1 ORDER BY d.source_priority,s.file_name;",
         result.error);
     if (!routes) return result;
-    while (sqlite3_step(products.get()) == SQLITE_ROW) {
-        SinexProductRecord record;
-        record.logicalKey = ColumnText(products.get(), 0);
-        const auto parseDate = [](const std::string& text) {
-            int year = 0;
-            int month = 0;
-            int day = 0;
-            if (sscanf_s(text.c_str(), "%d-%d-%d",
-                    &year, &month, &day) != 3) return QueryDate{};
-            return MakeQueryDate(year, month, day);
-        };
-        record.nominalDate = parseDate(ColumnText(products.get(), 1));
-        record.coverageStart = parseDate(ColumnText(products.get(), 2));
-        record.coverageEnd = parseDate(ColumnText(products.get(), 3));
-        record.startHour = sqlite3_column_int(products.get(), 4);
-        record.startMinute = sqlite3_column_int(products.get(), 5);
-        record.series = ColumnText(products.get(), 6);
-        record.streamCode = ColumnText(products.get(), 7);
-        record.center = ColumnText(products.get(), 8);
-        record.project = ColumnText(products.get(), 9);
-        record.solution = ColumnText(products.get(), 10);
-        record.latency = ColumnText(products.get(), 11);
-        record.duration = ColumnText(products.get(), 12);
-        record.interval = ColumnText(products.get(), 13);
-        record.contentType = ColumnText(products.get(), 14);
-        record.format = ColumnText(products.get(), 15);
-        record.productClass = ColumnText(products.get(), 16);
-        sqlite3_reset(routes.get());
-        sqlite3_clear_bindings(routes.get());
-        if (!Bind(routes.get(), 1, record.logicalKey)) {
-            result.products.clear();
-            return result;
-        }
-        while (sqlite3_step(routes.get()) == SQLITE_ROW) {
-            record.routes.push_back({ColumnText(routes.get(), 0),
-                sqlite3_column_int(routes.get(), 1),
-                ColumnText(routes.get(), 2),
-                Utf8ToWide(ColumnText(routes.get(), 3)),
-                ColumnText(routes.get(), 4)});
-        }
-        result.products.push_back(std::move(record));
-    }
+    ReadSinexRows(products.get(), routes.get(), result);
     return result;
 }
 

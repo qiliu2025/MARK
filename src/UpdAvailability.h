@@ -15,6 +15,12 @@ struct UpdProductRoute {
     std::wstring fileName;
 };
 
+struct UpdReferenceProduct {
+    std::wstring type, key, fileName, center, series, project, solution, interval, logicalKey;
+    QueryDate nominalDate{};
+    std::vector<UpdProductRoute> routes;
+};
+
 struct UpdProductRecord {
     std::wstring logicalKey;
     QueryDate nominalDate{};
@@ -26,6 +32,9 @@ struct UpdProductRecord {
     std::wstring provider;
     std::wstring format;
     std::vector<UpdProductRoute> routes;
+    std::wstring fileName;
+    bool dcbDateMismatch = false;
+    std::vector<UpdReferenceProduct> references;
 };
 
 struct UpdAvailabilityLookup {

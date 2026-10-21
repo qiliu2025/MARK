@@ -51,6 +51,7 @@
 #include <iterator>
 #include <memory>
 #include <limits>
+#include <map>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
@@ -568,6 +569,8 @@ std::wstring ProductLogicalKey(const PreciseProductFile& product) {
     // carries duration/start-time variants (for example 01D vs 02H SP3).
     // SINEX/TRO/DCB IDs intentionally contain nominal/coverage dates and are
     // therefore grouped by their descriptive fields above.
+    if(product.category==PreciseProductCategory::DifferentialCodeBias
+        &&product.id.find(L"_0000_")!=std::wstring::npos)key+=L"|"+product.id;
     if (product.category != PreciseProductCategory::Sinex
         && product.category != PreciseProductCategory::Troposphere
         && product.category != PreciseProductCategory::DifferentialCodeBias) {
@@ -979,28 +982,71 @@ PreciseBundleProduct ToBundleProduct(const OsbProductRecord& record) {
     return product;
 }
 
+std::wstring DatedProductSeriesId(const std::string& physicalFile, const bool includeFormat) {
+    auto file=physicalFile;
+    const auto normalized=NormalizeBundleFileName(file);
+    if(normalized.size()<file.size())file.resize(normalized.size());
+    const auto first=file.find('_'),second=first==std::string::npos?first:file.find('_',first+1);
+    if(first==std::string::npos||second==std::string::npos||second-first!=12)return {};
+    if(!std::all_of(file.begin()+first+1,file.begin()+second,[](unsigned char c){return c>='0'&&c<='9';}))return {};
+    const auto third=file.find('_',second+1),fourth=third==std::string::npos?third:file.find('_',third+1);
+    if(third==std::string::npos||fourth==std::string::npos)return {};
+    auto id=file.substr(0,first)+"_"+file.substr(first+8,4)+file.substr(second,fourth-second);
+    if(includeFormat){auto format=file.substr(fourth);std::replace(format.begin(),format.end(),'.','_');id+=format;}
+    return Utf8ToWide(id);
+}
+
+std::wstring UpdSeriesId(const UpdProductRecord& record) {
+    return L"IGMAS-UPD|"+record.variant+L"|"+record.updClass+L"|"+record.frequencyCombination
+        +L"|"+record.constellation+L"|"+record.interval;
+}
+
+PreciseUpdFileRecord UpdFileRecord(const UpdProductRecord& source) {
+    PreciseUpdFileRecord record;
+    record.date=source.nominalDate;record.logicalKey=source.logicalKey;
+    record.fileName=source.fileName;record.flagged=source.dcbDateMismatch;
+    for(const auto& input:source.references)if(input.type==L"DCB")record.dcbFileName=input.fileName;
+    return record;
+}
+
+void FinalizeUpdSeries(PreciseProductFile& product) {
+    if(product.updRecords.empty())return;
+    std::set<int> days;
+    for(const auto& record:product.updRecords)
+        if(!record.flagged)days.insert(record.date.year*10000+record.date.month*100+record.date.day);
+    product.availableDays=static_cast<int>(days.size());
+    product.completenessPercent=product.expectedDays>0?100.0*product.availableDays/product.expectedDays:0;
+    product.localInventoryOnly=product.mirrors.empty();
+    product.status=product.localInventoryOnly
+        ? L"Local UPD inventory; online download URL not configured" : L"查询范围完整";
+    if(days.empty()){
+        product.selected=false;
+        product.status=L"UPD 有问题：DCB 日期与 UPD 日期不同；默认不选取。";
+    }
+}
+
 PreciseBundleProduct ToBundleProduct(const UpdProductRecord& record) {
     PreciseBundleProduct product;
     product.type = PreciseBundleProductType::Upd;
     product.logicalKey = WideToUtf8(record.logicalKey);
-    product.displayId = record.logicalKey;
+    product.displayId = UpdSeriesId(record);
     product.displayName = L"iGMAS " + record.variant + L" " + record.updClass
         + L" UPD（" + record.frequencyCombination + L"）";
     product.nominalDate = record.nominalDate;
     product.coverageStart = record.nominalDate;
     product.coverageEnd = record.nominalDate;
-    // The current iGMAS index identifies the producing service rather than
-    // an IGS analysis-centre prefix.  Do not invent a WUM/CODE centre: leave
-    // it unknown and let strict mode surface the warning in the report.
-    // ``variant`` (UC/IF, WL/NL, ...) describes the bias solution, not the
-    // SP3/CLK analysis-centre series.  Treating it as ``series`` would make
-    // every otherwise usable UPD row look incompatible with an anchor such
-    // as WUM0MGXFIN.  Keep the variant in the bias convention below and leave
-    // producer-family fields unknown; the planner will surface that missing
-    // provenance as a strict-mode warning instead of inventing a centre.
-    product.series = {};
-    product.productLine = {};
-    product.latency = {};
+    product.center = WideToUtf8(record.provider);
+    product.flagged = record.dcbDateMismatch;
+    product.inventoryOnly = record.routes.empty();
+    if (product.flagged) product.indexNote = "UPD 有问题：DCB 日期与 UPD 日期不同；默认不选取。";
+    for (const auto& ref : record.references) {
+        const auto type = ref.type == L"SP3" ? PreciseBundleProductType::Sp3
+            : ref.type == L"CLK" ? PreciseBundleProductType::Clk
+            : ref.type == L"DCB" ? PreciseBundleProductType::Dcb
+            : ref.type == L"ATX" ? PreciseBundleProductType::Antex
+            : PreciseBundleProductType::SinexReference;
+        product.declaredInputs.emplace_back(type, WideToUtf8(ref.fileName));
+    }
     product.constellation = WideToUtf8(record.constellation);
     product.interval = WideToUtf8(record.interval);
     product.referenceFrequency = WideToUtf8(record.frequencyCombination);
@@ -1011,7 +1057,7 @@ PreciseBundleProduct ToBundleProduct(const UpdProductRecord& record) {
         product.biasConvention += variant;
     }
     product.routes = ToBundleRoutes(record.routes);
-    product.fileName = FirstRouteFileName(product.routes);
+    product.fileName = WideToUtf8(record.fileName);
     return product;
 }
 
@@ -1154,8 +1200,7 @@ bool BundleFamilyMayMatchRequest(
             && NormalizeBundleToken(product.productLine) == "MGX"
             && NormalizeBundleToken(product.latency) == "RAPID";
     }
-    if (request.plan == PreciseBundlePlan::WumPridePppAr
-        && product.type >= PreciseBundleProductType::SinexCrd
+    if (product.type >= PreciseBundleProductType::SinexCrd
         && product.type <= PreciseBundleProductType::Brdc) {
         const auto series = NormalizeBundleToken(product.series);
         const auto center = NormalizeBundleToken(product.center);
@@ -1252,7 +1297,10 @@ PreciseProductCategory ToUiCategory(const PreciseBundleProductType type) {
         return PreciseProductCategory::Antenna;
     case PreciseBundleProductType::SinexCrd:
     case PreciseBundleProductType::SinexSol:
+    case PreciseBundleProductType::SinexReference:
         return PreciseProductCategory::Sinex;
+    case PreciseBundleProductType::Dcb:
+        return PreciseProductCategory::DifferentialCodeBias;
     case PreciseBundleProductType::Gim:
         return PreciseProductCategory::Ionosphere;
     case PreciseBundleProductType::Vmf1H00:
@@ -1418,6 +1466,10 @@ PreciseProductFile ToDcbProductFile(const DcbProductRecord& record) {
         ? L"CODE" : Utf8ToWide(record.center);
     product.name = center + L" " + Utf8ToWide(record.variant)
         + L" DCB（" + Utf8ToWide(record.scope) + L"）";
+    for(const auto& route:record.routes){
+        const auto id=DatedProductSeriesId(route.fileName,true);
+        if(!id.empty()){product.id=id;break;}
+    }
     product.category = PreciseProductCategory::DifferentialCodeBias;
     product.latency = Sp3Latency(record.latency);
     product.center = center;
@@ -1468,7 +1520,8 @@ PreciseProductFile ToOsbProductFile(const OsbProductRecord& record) {
 
 PreciseProductFile ToUpdProductFile(const UpdProductRecord& record) {
     PreciseProductFile product;
-    product.id = record.logicalKey;
+    product.id = UpdSeriesId(record);
+    product.updRecords.push_back(UpdFileRecord(record));
     product.name = L"iGMAS " + record.variant + L" " + record.updClass
         + L" UPD（" + record.frequencyCombination + L"）";
     product.category = PreciseProductCategory::UncalibratedPhaseDelay;
@@ -1486,6 +1539,7 @@ PreciseProductFile ToUpdProductFile(const UpdProductRecord& record) {
         product.mirrors.size());
     if (product.localInventoryOnly)
         product.status = L"Local UPD inventory; online download URL not configured";
+    if (record.dcbDateMismatch) product.status = L"UPD 有问题：DCB 日期与 UPD 日期不同；默认不选取。";
     return product;
 }
 
@@ -1794,12 +1848,10 @@ public:
         quickPreset_ = Combo(IdQuickPreset);
         for (const wchar_t* text : {
                  L"不使用快速方案",
-                 L"PRIDE PPP-AR",
-                 L"IGS 最终 PPP｜标准精密定位产品",
-                 L"UPD PPP-AR｜相位偏差整数固定",
-                 L"OSB PPP-AR｜观测偏差整数固定",
-                 L"PPP-RTK｜网络高精度定位基础文件",
-                 L"通用 PPP 智能优选｜自动找完整产品"}) {
+                 L"PRIDE PPP-AR(OSB)",
+                 L"GREAT PPP-AR(UPD)",
+                 L"PPP-RTK 自动配套",
+                 L"PPP 自动配套"}) {
             SendMessageW(quickPreset_, CB_ADDSTRING, 0,
                 reinterpret_cast<LPARAM>(text));
         }
@@ -2600,6 +2652,8 @@ public:
                 const auto [it, inserted] = byKey.emplace(key, result->products.size());
                 std::size_t productIndex = it->second;
                 auto dayMirrors = std::move(product.mirrors);
+                const bool excluded = !product.updRecords.empty() && product.updRecords.front().flagged;
+                if(excluded)dayMirrors.clear();
                 if (inserted) {
                     product.mirrors = RepresentativeMirrors(dayMirrors);
                     product.selected = false;
@@ -2612,7 +2666,10 @@ public:
                 } else {
                     MergeMirrors(result->products[productIndex].mirrors,
                         RepresentativeMirrors(dayMirrors));
+                    auto& records=result->products[productIndex].updRecords;
+                    records.insert(records.end(),product.updRecords.begin(),product.updRecords.end());
                 }
+                if(excluded)return;
                 auto& dayFiles = result->productDays[productIndex];
                 // Range rows arrive in chronological order.  The old linear
                 // search made a multi-decade query quadratic in the number
@@ -2726,7 +2783,7 @@ public:
         // index is reported immediately instead of silently reintroducing
         // that unbounded slow path.
         if (!usedRangeReader
-            && IsPreciseSearchSummaryCategory(categoryIndex)) {
+            && categoryIndex != 4 && categoryIndex != 12 && IsPreciseSearchSummaryCategory(categoryIndex)) {
             const auto range = LoadPreciseSearchFamilyRange(
                 categoryIndex, start, end);
             processedDays = static_cast<std::size_t>(expectedDays);
@@ -2920,6 +2977,24 @@ public:
                     expectedDays);
             }
         }
+        if(!usedRangeReader&&categoryIndex==4){
+            const auto range=LoadPreciseSearchFamilyRange(4,start,end);
+            usedRangeReader=true;processedDays=static_cast<std::size_t>(expectedDays);
+            indexedDays=static_cast<std::size_t>(range.indexedDays);incompleteDays=range.incompleteDates.size();
+            if(!range.error.empty()){result->failed=true;result->status=range.error;return result;}
+            for(const auto& family:range.families){
+                const auto routes=LoadPreciseSearchFamilyRoutes(4,family.familyKey,start,end,stopToken);
+                if(!routes.error.empty()){result->failed=true;result->status=routes.error;return result;}
+                for(const auto& dated:routes.records){
+                    auto product=family.representative;product.mirrors=dated.mirrors;
+                    for(const auto& route:dated.mirrors){
+                        const auto id=DatedProductSeriesId(WideToUtf8(route.fileName),true);
+                        if(!id.empty()){product.id=id;break;}
+                    }
+                    consumeProduct(dated.date,std::move(product));
+                }
+            }
+        }
         if (!usedRangeReader && categoryIndex == 12) {
             const auto range = LoadUpdAvailabilityRange(start, end);
             usedRangeReader = range.error.empty();
@@ -2928,8 +3003,7 @@ public:
             incompleteDays = range.incompleteDates.size();
             if (!range.error.empty()) warnings.push_back(range.error);
             else for (const auto& record : range.products) {
-                consumeCoverage(record.nominalDate, record.nominalDate,
-                    ToUpdProductFile(record));
+                consumeProduct(record.nominalDate, ToUpdProductFile(record));
             }
         }
         if (!usedRangeReader) for (QueryDate day = start;; day = AddDays(day, 1)) {
@@ -2953,6 +3027,7 @@ public:
         }
         for (auto& product : result->products) {
             product.expectedDays = expectedDays;
+            FinalizeUpdSeries(product);
             product.completenessPercent = expectedDays == 0 ? 0.0
                 : 100.0 * static_cast<double>(product.availableDays)
                     / static_cast<double>(expectedDays);
@@ -3088,7 +3163,7 @@ public:
             return;
         }
 
-        // All three first-release plans start with the SP3 orbit family.  The
+        // Quick plans start with the SP3 orbit family. The
         // regular list remains available so users can inspect or download a
         // particular member.  Combo indices are set explicitly to avoid
         // relying on display strings (which are localised in the UI).
@@ -3101,45 +3176,24 @@ public:
                 L"IGS 每日 SINEX、CODE Final GIM、VMF1/VMF3 OP 四时次、"
                 L"IGS 每日 RINEX 3 BRDC；缺口会按日期区间显示在运行窗口。");
             SetWindowTextW(status_,
-                L"已应用 PRIDE PPP-AR 方案；"
+                L"已应用 PRIDE PPP-AR(OSB) 方案；"
                 L"正在核对 WUM RAPID 与辅助产品…");
         } else if (preset == 2) {
-            SendMessageW(latency_, CB_SETCURSEL, 1, 0); // 最终
-            SendMessageW(center_, CB_SETCURSEL, 1, 0); // IGS
-            SetWindowTextW(quickInfo_,
-                L"标准 PPP：IGS Final SP3 + CLK + ERP/EOP + ANTEX；"
-                L"适合浮点 PPP，Bias/ORBEX 等可按需另行选择。");
+            SendMessageW(latency_, CB_SETCURSEL, 0, 0);
+            SendMessageW(center_, CB_SETCURSEL, 0, 0);
+            SetWindowTextW(quickInfo_, L"GREAT PPP-AR(UPD)：CODE MGX Final 05M SP3＋30S CLK；2022—2023 年用 CAS MGX Rapid BSX DCB，2024 年起用 CAS OPS Rapid BIA DCB；固定 IGS20_STANDARD_2247，配套 IGS RINEX 3 BRDC；选择全部 UPD 类别，问题记录默认排除。");
             SetWindowTextW(status_,
-                L"已应用标准 IGS Final PPP 方案；正在查询 IGS Final SP3 起始产品…");
+                L"已应用 GREAT PPP-AR(UPD) 方案，正在查询产品…");
         } else if (preset == 3) {
-            SendMessageW(latency_, CB_SETCURSEL, 1, 0); // 最终
-            SendMessageW(center_, CB_SETCURSEL, 0, 0); // 全部机构；UPD按AC匹配
-            SetWindowTextW(quickInfo_,
-                L"UPD PPP-AR 兼容模式：SP3 + CLK + 对应分析中心 UPD + ERP + "
-                L"ANTEX；UPD 不能与其他机构的钟差/偏差混用。");
-            SetWindowTextW(status_,
-                L"已应用 UPD PPP-AR 兼容方案；请按分析中心检查 UPD 与轨道/钟差是否成套。");
+            SendMessageW(latency_, CB_SETCURSEL, 0, 0);
+            SendMessageW(center_, CB_SETCURSEL, 0, 0);
+            SetWindowTextW(quickInfo_, L"PPP-RTK 自动配套：自动选择兼容的同机构同系列 SP3、30S CLK 和相位 OSB；优先可核实的核心覆盖，再比较整套覆盖、Final 和 Rapid。ANTEX 按 CLK 声明选择，配套 ERP、IGS 每日坐标解和 RINEX 3 BRDC；有记录时附带同系列 ORBEX。区域改正由处理软件生成。");
+            SetWindowTextW(status_, L"已应用 PPP-RTK 自动配套方案，正在比较兼容产品组合…");
         } else if (preset == 4) {
             SendMessageW(latency_, CB_SETCURSEL, 0, 0);
             SendMessageW(center_, CB_SETCURSEL, 0, 0);
-            SetWindowTextW(quickInfo_,
-                L"OSB PPP-AR：SP3 + CLK + OSB + ERP + ANTEX；"
-                L"SP3、CLK 与 OSB 必须属于同一分析中心和产品线，不跨机构拼接。");
-            SetWindowTextW(status_, L"已应用 OSB PPP-AR 同机构方案，正在核对产品族。");
-        } else if (preset == 5) {
-            SendMessageW(latency_, CB_SETCURSEL, 0, 0);
-            SendMessageW(center_, CB_SETCURSEL, 0, 0);
-            SetWindowTextW(quickInfo_,
-                L"PPP-RTK / 网络 RTK 通用精密产品：SP3 + CLK + OSB + ERP + ANTEX；"
-                L"区域大气改正和实时播发不属于本地精密文件库，需由用户的服务端另行提供。");
-            SetWindowTextW(status_, L"已应用 PPP-RTK / 网络 RTK 通用精密产品方案。");
-        } else if (preset == 6) {
-            SendMessageW(latency_, CB_SETCURSEL, 0, 0);
-            SendMessageW(center_, CB_SETCURSEL, 0, 0);
-            SetWindowTextW(quickInfo_,
-                L"通用 PPP 智能优选：自动选择一套完整的 SP3 轨道、CLK 钟差、ERP 和 ANTEX；"
-                L"轨道与钟差保持同机构同产品线，优先完整覆盖，再选 Final 和高采样率钟差。");
-            SetWindowTextW(status_, L"已应用通用 PPP 智能优选方案，正在比较分析中心与产品族。");
+            SetWindowTextW(quickInfo_, L"PPP 自动配套：自动比较同机构同产品线 SP3 + 30S CLK + ERP + IGS ANTEX；配套 IGS 每日 SINEX CRD/SOL、CODE Final GIM、VMF1/VMF3 OP 四时次和 IGS RINEX 3 BRDC。优先整套覆盖天数，再选元数据可核实、Final 和 Rapid；用于浮点解。");
+            SetWindowTextW(status_, L"已应用PPP 自动配套方案，正在比较分析中心与产品族。");
         } else {
             // Clearing a quick preset restores the unrestricted product list.
             SendMessageW(latency_, CB_SETCURSEL, 0, 0);
@@ -3192,6 +3246,56 @@ public:
         return true;
     }
 
+    void AppendFixedUpdCatalog(PreciseBundleCatalog& catalog,
+        const UpdAvailabilityRangeLookup& upd,const QueryDate& start,const QueryDate& end,
+        std::vector<std::wstring>& warnings) const {
+        for(const auto& record:upd.products)catalog.products.push_back(ToBundleProduct(record));
+        if(!upd.products.empty()&&std::ranges::all_of(upd.products,[](const auto& p){return p.routes.empty();}))
+            warnings.push_back(L"UPD 索引记录已列出，尚未配置在线下载地址。");
+        const auto antex=LoadAntexAvailabilityCatalog();
+        if(!antex.error.empty())warnings.push_back(antex.error);
+        for(const auto& record:antex.products){
+            if(!IsQuickBundleAntexCandidate(record))continue;
+            auto p=ToBundleProduct(record);
+            if(p.displayId!=UpdPppArPreset::Antex)continue;
+            std::erase_if(p.routes,[](const auto& route){return NormalizeBundleFileName(route.fileName)!="igs20_2247.atx";});
+            if(p.routes.empty())continue;
+            p.fileName="igs20_2247.atx";p.coverageStart=start;p.coverageEnd=end;
+            catalog.products.push_back(std::move(p));
+            break;
+        }
+        for(const auto firstYear:{2022,2024}){
+            const auto first=SysDay(start)>SysDay(MakeQueryDate(firstYear,1,1))?start:MakeQueryDate(firstYear,1,1);
+            const auto last=firstYear==2022&&SysDay(end)>SysDay(MakeQueryDate(2023,12,31))?MakeQueryDate(2023,12,31):end;
+            if(SysDay(last)<SysDay(first))continue;
+            const auto expected=UpdPppArPreset::DcbForYear(firstYear);
+            const auto families=LoadPreciseSearchFamilyRange(4,first,last);
+            if(!families.error.empty()){warnings.push_back(families.error);continue;}
+            for(const auto& family:families.families){
+                if(PreciseProductDisplayCenter(family.representative)!=L"CAS"
+                    ||family.representative.latency!=PreciseProductLatency::Rapid
+                    ||family.representative.interval!=L"01D")continue;
+                const auto routes=LoadPreciseSearchFamilyRoutes(4,family.familyKey,first,last);
+                if(!routes.error.empty()){warnings.push_back(routes.error);continue;}
+                for(const auto& dated:routes.records){
+                    PreciseBundleProduct p;p.type=PreciseBundleProductType::Dcb;
+                    p.logicalKey=dated.logicalKey;p.nominalDate=dated.date;
+                    p.coverageStart=dated.date;p.coverageEnd=dated.date;
+                    p.displayId=expected;p.displayName=expected;p.center="CAS";p.latency="RAPID";
+                    p.interval="01D";p.productLine=firstYear==2022?"MGX":"OPS";
+                    p.series=firstYear==2022?"CAS0MGXRAP":"CAS0OPSRAP";
+                    p.constellation=WideToUtf8(family.representative.constellation);
+                    for(const auto& route:dated.mirrors){
+                        if(DatedProductSeriesId(WideToUtf8(route.fileName),true)!=expected)continue;
+                        p.routes.push_back({WideToUtf8(route.source),WideToUtf8(route.fileName),route.url});
+                    }
+                    if(p.routes.empty())continue;
+                    p.fileName=FirstRouteFileName(p.routes);catalog.products.push_back(std::move(p));
+                }
+            }
+        }
+    }
+
     PreciseBundleCatalog LoadBundleCatalog(
         const QueryDate& start,
         const QueryDate& end,
@@ -3202,7 +3306,10 @@ public:
         const std::stop_token stopToken = {}) const {
         PreciseBundleCatalog catalog;
         const auto plan = request.plan;
-        const auto required = RequiredBundleProductTypes(plan);
+        const bool fixedUpd = plan == PreciseBundlePlan::UpdPppAr;
+        auto required = RequiredBundleProductTypes(plan);
+        const auto optional = OptionalBundleProductTypes(plan);
+        required.insert(required.end(), optional.begin(), optional.end());
         const auto isRequired = [&required](
                                     const PreciseBundleProductType type) {
             return std::ranges::find(required, type) != required.end();
@@ -3244,8 +3351,8 @@ public:
             }
         };
 
-        const auto appendWumVmf = [&] {
-            if (plan != PreciseBundlePlan::WumPridePppAr) return;
+        const auto appendCommonVmf = [&] {
+            if (!isRequired(PreciseBundleProductType::Vmf3H00)) return;
             const auto families = LoadVmfFamilyRange(start, end);
             if (!families.error.empty()) {
                 warnings.push_back(L"VMF 范围读取失败：" + families.error);
@@ -3342,22 +3449,21 @@ public:
             if (isRequired(PreciseBundleProductType::Att)) {
                 appendCompact(5, PreciseBundleProductType::Att, L"ORBEX");
             }
-            if (plan == PreciseBundlePlan::WumPridePppAr) {
-                appendCompact(8, PreciseBundleProductType::SinexCrd,
-                    L"IGS SINEX CRD");
-                appendCompact(8, PreciseBundleProductType::SinexSol,
-                    L"IGS SINEX SOL");
-                appendCompact(6, PreciseBundleProductType::Gim,
-                    L"CODE GIM Final");
-                appendCompact(10, PreciseBundleProductType::Brdc,
-                    L"IGS BRDC");
-                appendWumVmf();
-            }
+            if(isRequired(PreciseBundleProductType::SinexCrd))
+                appendCompact(8,PreciseBundleProductType::SinexCrd,L"IGS SINEX CRD");
+            if(isRequired(PreciseBundleProductType::SinexSol))
+                appendCompact(8,PreciseBundleProductType::SinexSol,L"IGS SINEX SOL");
+            if(isRequired(PreciseBundleProductType::Gim))
+                appendCompact(6,PreciseBundleProductType::Gim,L"CODE GIM Final");
+            if(isRequired(PreciseBundleProductType::Brdc))
+                appendCompact(10,PreciseBundleProductType::Brdc,L"IGS BRDC");
+            if(isRequired(PreciseBundleProductType::Vmf1H00)
+                ||isRequired(PreciseBundleProductType::Vmf3H00))appendCommonVmf();
 
             // ANTEX and UPD are small catalogues compared with the route-heavy
             // daily archives.  Keep their existing adapters here; this also
             // preserves the date-effective calibration selection semantics.
-            if (isRequired(PreciseBundleProductType::Antex)) {
+            if (!fixedUpd && isRequired(PreciseBundleProductType::Antex)) {
                 const auto antex = LoadAntexAvailabilityRange(start, end);
                 recordAvailability(PreciseBundleProductType::Antex, antex.indexed,
                     antex.complete, antex.incompleteDates, antex.error, L"ANTEX");
@@ -3370,12 +3476,7 @@ public:
                 const auto upd = LoadUpdAvailabilityRange(start, end);
                 recordAvailability(PreciseBundleProductType::Upd, upd.indexed,
                     upd.complete, upd.incompleteDates, upd.error, L"UPD");
-                for (const auto& record : upd.products) {
-                    auto product = ToBundleProduct(record);
-                    if (BundleFamilyMayMatchRequest(product, request)) {
-                        catalog.products.push_back(std::move(product));
-                    }
-                }
+                AppendFixedUpdCatalog(catalog, upd, start, end, warnings);
             }
             return catalog;
         }
@@ -3551,31 +3652,25 @@ public:
                     L"ORBEX", hydrate);
             }
         }
-        if (plan == PreciseBundlePlan::WumPridePppAr) {
-            appendSelectedFamilyRoutes(8,
-                PreciseBundleProductType::SinexCrd, L"IGS SINEX CRD");
-            appendSelectedFamilyRoutes(8,
-                PreciseBundleProductType::SinexSol, L"IGS SINEX SOL");
-            appendSelectedFamilyRoutes(6,
-                PreciseBundleProductType::Gim, L"CODE GIM Final");
-            appendSelectedFamilyRoutes(10,
-                PreciseBundleProductType::Brdc, L"IGS BRDC");
-            appendWumVmf();
-        }
+        if(isRequired(PreciseBundleProductType::SinexCrd))
+            appendSelectedFamilyRoutes(8,PreciseBundleProductType::SinexCrd,L"IGS SINEX CRD");
+        if(isRequired(PreciseBundleProductType::SinexSol))
+            appendSelectedFamilyRoutes(8,PreciseBundleProductType::SinexSol,L"IGS SINEX SOL");
+        if(isRequired(PreciseBundleProductType::Gim))
+            appendSelectedFamilyRoutes(6,PreciseBundleProductType::Gim,L"CODE GIM Final");
+        if(isRequired(PreciseBundleProductType::Brdc))
+            appendSelectedFamilyRoutes(10,PreciseBundleProductType::Brdc,L"IGS BRDC");
+        if(isRequired(PreciseBundleProductType::Vmf1H00)
+            ||isRequired(PreciseBundleProductType::Vmf3H00))appendCommonVmf();
 
         if (isRequired(PreciseBundleProductType::Upd)) {
             const auto upd = LoadUpdAvailabilityRange(start, end);
             recordAvailability(PreciseBundleProductType::Upd, upd.indexed,
                 upd.complete, upd.incompleteDates, upd.error, L"UPD");
-            for (const auto& record : upd.products) {
-                auto product = ToBundleProduct(record);
-                if (BundleFamilyMayMatchRequest(product, request)) {
-                    catalog.products.push_back(std::move(product));
-                }
-            }
+            AppendFixedUpdCatalog(catalog, upd, start, end, warnings);
         }
 
-        if (isRequired(PreciseBundleProductType::Antex)) {
+        if (!fixedUpd && isRequired(PreciseBundleProductType::Antex)) {
             const auto antex = LoadAntexAvailabilityRange(start, end);
             recordAvailability(PreciseBundleProductType::Antex, antex.indexed,
                 antex.complete, antex.incompleteDates, antex.error, L"ANTEX");
@@ -3612,7 +3707,7 @@ public:
             }
             return report;
         }
-        report += L"；整套完整 " + std::to_wstring(result.completeDays)
+        report += std::wstring(L"；整套完整 ") + std::to_wstring(result.completeDays)
             + L"/" + std::to_wstring(result.expectedDays) + L" 天";
         if (!result.complete) {
             // Group consecutive dates with the same missing members.  Keep
@@ -3659,6 +3754,9 @@ public:
                     + L" 段，详见清单完整率";
             }
         }
+        if(result.plan==PreciseBundlePlan::UpdPppAr){
+            if(result.flaggedUpdCount)report+=std::format(L"；有问题的 UPD {} 条，默认不选取",result.flaggedUpdCount);
+        }
         if (!result.warning.empty()) {
             report += L"；兼容性提示：" + Utf8ToWide(result.warning);
         }
@@ -3692,43 +3790,11 @@ public:
             QueryDate end{};
             if (!ReadDateRange(start, end)) return;
 
-            PreciseBundleRequest request;
-            request.startDate = start;
-            request.endDate = end;
-            request.strictMatching = true;
-            if (preset == 1) {
-                request.plan = PreciseBundlePlan::WumPridePppAr;
-                request.latency = PreciseBundleLatency::Rapid;
-                request.center = "WUM";
-                request.series = "WUM0MGXRAP";
-                request.productLine = "MGX";
-                request.clockInterval = "30S";
-            } else if (preset == 2) {
-                request.plan = PreciseBundlePlan::StandardPpp;
-                request.latency = PreciseBundleLatency::Final;
-                request.center = "IGS";
-                request.productLine = "OPS";
-                request.clockInterval = "30S";
-            } else if (preset == 3) {
-                request.plan = PreciseBundlePlan::UpdPppAr;
-                request.latency = PreciseBundleLatency::Automatic;
-                request.center.clear();
-                request.productLine.clear();
-            } else if (preset == 4) {
-                request.plan = PreciseBundlePlan::OsbPppAr;
-                request.latency = PreciseBundleLatency::Automatic;
-                request.clockInterval = "30S";
-            } else if (preset == 5) {
-                request.plan = PreciseBundlePlan::NetworkRtkPppRtk;
-                request.latency = PreciseBundleLatency::Automatic;
-                request.clockInterval = "30S";
-            } else {
-                request.plan = PreciseBundlePlan::AutoStandardPpp;
-                request.latency = PreciseBundleLatency::Automatic;
-                // Any identified centre/line may win, but SP3 and CLK must
-                // still form one compatible family for every requested day.
-            }
-            request.referenceFrequency.clear();
+            const auto plan = preset == 1 ? PreciseBundlePlan::WumPridePppAr
+                : preset == 2 ? PreciseBundlePlan::UpdPppAr
+                : preset == 3 ? PreciseBundlePlan::NetworkRtkPppRtk
+                : PreciseBundlePlan::AutoStandardPpp;
+            const auto request = MakeDefaultPreciseBundleRequest(plan, start, end);
 
             if (catalogThread_.joinable()) catalogThread_.join();
             catalogLoading_ = true;
@@ -3818,8 +3884,9 @@ public:
         std::unordered_map<std::string, std::size_t> displayedKeys;
         for (const auto& status : result.dates) {
             for (const auto& member : status.members) {
-                const auto key = manifestKey(member.type,
-                    member.logicalKey, member.fileName);
+                auto key = manifestKey(member.type,member.logicalKey,member.fileName);
+                // Deferred families retain every planned date for route hydration.
+                if(member.fileName=="(deferred)")key+="\x1f"+std::to_string(BundleDateCode(status.date));
                 const auto [entry, inserted] = displayedKeys.emplace(
                     key, displayedManifest.size());
                 if (inserted) {
@@ -3844,9 +3911,8 @@ public:
                 product.logicalKey, product.fileName), &product);
         }
 
-        // Keep the same product IDs and names as the ordinary catalogue.
-        // A row may still cover many dated files, but products with different
-        // IDs must never be combined under an invented quick-plan label.
+        // Group dated inputs by series while keeping exact files and mirrors
+        // in the download members. Unresolved routes remain separate rows.
         const auto originalId = [&](const PreciseBundleManifestEntry& member) {
             const auto source = sourceByKey.find(manifestKey(member.type,
                 member.logicalKey, member.fileName));
@@ -3862,16 +3928,21 @@ public:
                 ? member.fileName : member.logicalKey);
         };
         const auto rowKeyFor = [&](const PreciseBundleManifestEntry& member) {
+            const auto source = sourceByKey.find(manifestKey(member.type, member.logicalKey, member.fileName));
+            const bool missing = source != sourceByKey.end() && source->second->inventoryOnly
+                && member.type != PreciseBundleProductType::Upd;
             return std::to_wstring(static_cast<int>(member.type))
-                + L"\x1f" + originalId(member);
+                + L"\x1f" + originalId(member) + (missing ? L"_MISSING_ROUTE" : L"");
         };
         std::unordered_map<std::wstring, std::size_t> rowByKey;
         std::unordered_map<std::wstring,
-            std::unordered_map<int, std::size_t>> dayRowByKey;
+            std::unordered_map<std::string, std::size_t>> dayRowByKey;
         std::unordered_map<std::wstring,
             std::unordered_set<int>> coveredDaysByRow;
         for (const auto& status : result.dates) {
             for (const auto& member : status.members) {
+                const auto source=sourceByKey.find(manifestKey(member.type,member.logicalKey,member.fileName));
+                if(member.type==PreciseBundleProductType::Upd && source!=sourceByKey.end() && source->second->flagged)continue;
                 coveredDaysByRow[rowKeyFor(member)].insert(
                     status.date.year * 10000 + status.date.month * 100
                     + status.date.day);
@@ -3886,6 +3957,7 @@ public:
         productDays_.reserve(displayedManifest.size());
         indexedFamilyKeys_.reserve(displayedManifest.size());
         quickBundleDisplayedKeys_.reserve(displayedManifest.size());
+        quickBundleFiles_.clear();
         for (const auto& member : displayedManifest) {
             const auto key = manifestKey(member.type,
                 member.logicalKey, member.fileName);
@@ -3893,7 +3965,7 @@ public:
             auto row = rowByKey.find(rowKey);
             if (row == rowByKey.end()) {
                 PreciseProductFile product;
-                product.id = originalId(member);
+                product.id = rowKey.substr(rowKey.find(L'\x1f') + 1);
                 product.category = ToUiCategory(member.type);
                 const auto source = sourceByKey.find(key);
                 if (source != sourceByKey.end()) {
@@ -3927,8 +3999,11 @@ public:
                     product.mirrors.push_back({Utf8ToWide(route.source),
                         route.url, Utf8ToWide(route.fileName)});
                 }
-                product.selected = !quickBundleRestoreSelection_
-                    || quickBundleSelectionKeys_.contains(rowKey);
+                product.selected = quickBundleRestoreSelection_
+                    ? quickBundleSelectionKeys_.contains(rowKey) : member.selectedByDefault;
+                if(source!=sourceByKey.end()){
+                    product.localInventoryOnly=source->second->inventoryOnly;
+                }
                 product.expectedDays = result.expectedDays;
                 const auto coverage = coveredDaysByRow.find(rowKey);
                 product.availableDays = coverage == coveredDaysByRow.end()
@@ -3938,8 +4013,13 @@ public:
                         / static_cast<double>(result.expectedDays);
                 product.status = product.availableDays == result.expectedDays
                     ? L"查询范围完整" : L"部分日期有文件，可下载已找到的文件";
+                if(source!=sourceByKey.end()&&!source->second->indexNote.empty())
+                    product.status=Utf8ToWide(source->second->indexNote);
+                else if(product.localInventoryOnly)
+                    product.status=L"Local UPD inventory; online download URL not configured";
                 if (member.type == PreciseBundleProductType::Antex
-                    && request.plan == PreciseBundlePlan::WumPridePppAr) {
+                    && (request.plan == PreciseBundlePlan::WumPridePppAr
+                        || request.plan == PreciseBundlePlan::NetworkRtkPppRtk)) {
                     product.status = L"范围完整性按相关 CLK 引用日期统计，非 ANTEX 文件内部有效期。";
                 }
                 const std::size_t index = products_.size();
@@ -3951,11 +4031,32 @@ public:
                 row = rowByKey.find(rowKey);
             }
             const std::size_t index = row->second;
+            if(member.type==PreciseBundleProductType::Upd){
+                const auto source=sourceByKey.find(key);
+                if(source!=sourceByKey.end()){
+                    const auto& metadata=*source->second;
+                    PreciseUpdFileRecord record;
+                    record.date=metadata.nominalDate;record.logicalKey=Utf8ToWide(metadata.logicalKey);
+                    record.fileName=Utf8ToWide(metadata.fileName);record.flagged=metadata.flagged;
+                    for(const auto& [type,file]:metadata.declaredInputs)
+                        if(type==PreciseBundleProductType::Dcb)record.dcbFileName=Utf8ToWide(file);
+                    products_[index].updRecords.push_back(std::move(record));
+                    if(metadata.flagged)continue;
+                    if(!quickBundleRestoreSelection_)products_[index].selected=true;
+                }
+            }
             auto& days = productDays_[index];
             const int dateKey = member.date.year * 10000
                 + member.date.month * 100 + member.date.day;
             auto& dayRows = dayRowByKey[rowKey];
-            const auto dayIt = dayRows.find(dateKey);
+            const auto fileKey = std::to_string(dateKey) + "\x1f" + key;
+            const auto dayIt = dayRows.find(fileKey);
+            if (request.plan == PreciseBundlePlan::UpdPppAr
+                && member.type == PreciseBundleProductType::Dcb) {
+                auto& files = quickBundleFiles_[rowKey];
+                const auto file = Utf8ToWide(member.fileName);
+                if (std::ranges::find(files, file) == files.end()) files.push_back(file);
+            }
             std::vector<PreciseProductMirror> mirrors;
             for (const auto& route : member.routes) {
                 mirrors.push_back({Utf8ToWide(route.source), route.url,
@@ -3968,13 +4069,14 @@ public:
             products_[index].mirrors = RepresentativeMirrors(
                 products_[index].mirrors);
             if (dayIt == dayRows.end()) {
-                dayRows.emplace(dateKey, days.size());
+                dayRows.emplace(fileKey, days.size());
                 days.push_back({member.date, member.logicalKey,
                     std::move(mirrors)});
             } else {
                 MergeMirrors(days[dayIt->second].mirrors, mirrors);
             }
         }
+        for(auto& product:products_)FinalizeUpdSeries(product);
         coverageRanges_.resize(products_.size());
         for (const auto& [key, index] : rowByKey) {
             const auto found = coveredDaysByRow.find(key);
@@ -3984,8 +4086,89 @@ public:
                 coverageRanges_[index].push_back({day, day});
             }
         }
-        // Missing types have no original product ID; keep them in the
-        // completeness report instead of fabricating a catalogue row.
+        // Keep absent requirements visible without creating download members.
+        // Reuse a catalogue identity only when it unambiguously identifies
+        // the requested stream; otherwise show the required type/family.
+        using Type = PreciseBundleProductType;
+        const auto summary = LoadPreciseSearchCatalog();
+        const auto appendMissing = [&](const Type type, const std::wstring& fixedId) {
+            const auto category = ToUiCategory(type);
+            std::vector<const PreciseProductFile*> candidates;
+            const auto series = Utf8ToWide(request.series.empty() ? result.series : request.series);
+            for (const auto& candidate : summary.products) {
+                if (candidate.category != category) continue;
+                if (!fixedId.empty()) {
+                    if (candidate.id == fixedId) candidates.push_back(&candidate);
+                    continue;
+                }
+                if (type == Type::Sp3 || type == Type::Clk || type == Type::Osb
+                    || type == Type::Att || type == Type::Erp) {
+                    if (series.empty() || !NormalizeBundleToken(WideToUtf8(candidate.id)).starts_with(
+                        NormalizeBundleToken(WideToUtf8(series)) + "_")) continue;
+                    const auto interval = type == Type::Sp3 ? request.orbitInterval
+                        : type == Type::Clk ? request.clockInterval : std::string{};
+                    if (!interval.empty() && candidate.interval != Utf8ToWide(interval)) continue;
+                } else if (type == Type::SinexCrd || type == Type::SinexSol) {
+                    if (candidate.center != L"IGS" || candidate.constellation !=
+                        (type == Type::SinexCrd ? L"CRD / DAILY" : L"SOL / DAILY")) continue;
+                } else if (type == Type::Gim) {
+                    if (!candidate.id.starts_with(L"COD0OPSFIN_")) continue;
+                } else if (type == Type::Brdc) {
+                    if (!candidate.id.starts_with(L"BRDC00IGS_")
+                        || candidate.formatVersion != L"RINEX 3") continue;
+                } else {
+                    continue; // A CLK-derived ANTEX revision is not guessed.
+                }
+                candidates.push_back(&candidate);
+            }
+            PreciseProductFile product;
+            if (candidates.size() == 1) product = *candidates.front();
+            else {
+                product.id = fixedId.empty() ? BundleTypeLabel(type) : fixedId;
+                if (fixedId.empty() && !series.empty()
+                    && (type == Type::Sp3 || type == Type::Clk || type == Type::Osb
+                        || type == Type::Att || type == Type::Erp))
+                    product.id = series + L" / " + product.id;
+                product.latency = PreciseProductLatency::Other;
+            }
+            product.category = category;
+            product.name = product.id;
+            product.missingRequired = true;
+            product.selected = false;
+            product.localInventoryOnly = false;
+            product.mirrors.clear();
+            product.updRecords.clear();
+            product.availableDays = 0;
+            product.expectedDays = result.expectedDays;
+            product.completenessPercent = 0.0;
+            product.status = L"当前日期范围内未找到符合方案条件的本地记录；此行仅提示缺项，不能下载。";
+            products_.push_back(std::move(product));
+            productDays_.emplace_back();
+            coverageRanges_.emplace_back();
+            indexedFamilyKeys_.emplace_back();
+            quickBundleDisplayedKeys_.push_back(L"MISSING_REQUIREMENT_"
+                + std::to_wstring(static_cast<int>(type)) + fixedId);
+        };
+        for (const auto type : RequiredBundleProductTypes(request.plan)) {
+            if (request.plan == PreciseBundlePlan::UpdPppAr && type == Type::Dcb) {
+                if (end.year < 2022) appendMissing(type, L"");
+                for (const auto id : {UpdPppArPreset::Dcb2022To2023, UpdPppArPreset::DcbFrom2024}) {
+                    const bool needed = id == UpdPppArPreset::Dcb2022To2023
+                        ? start.year <= 2023 && end.year >= 2022 : end.year >= 2024;
+                    if (needed && !std::ranges::any_of(products_, [&](const auto& product) {
+                            return product.category == PreciseProductCategory::DifferentialCodeBias && product.id == id;
+                        })) appendMissing(type, std::wstring(id));
+                }
+                continue;
+            }
+            if (std::ranges::any_of(displayedManifest,
+                    [&](const auto& member) { return member.type == type; })) continue;
+            const std::wstring fixedId = request.plan != PreciseBundlePlan::UpdPppAr ? L""
+                : type == Type::Sp3 ? std::wstring(UpdPppArPreset::Orbit)
+                : type == Type::Clk ? std::wstring(UpdPppArPreset::Clock)
+                : type == Type::Antex ? std::wstring(UpdPppArPreset::Antex) : L"";
+            appendMissing(type, fixedId);
+        }
         ++catalogRevision_;
         periodStart_ = start;
         periodEnd_ = end;
@@ -4031,8 +4214,8 @@ public:
         const QueryDate start = quickBundleStart_;
         const QueryDate end = quickBundleEnd_;
         const auto request = quickBundleRequest_;
-        // The compact planner has already selected the exact SP3/CLK/ATT
-        // family for every date.  Carry only those family keys into the
+        // The compact planner has already selected each core and auxiliary
+        // family for every date. Carry only those family keys into the
         // hydration worker; re-enumerating every centre's family here is what
         // made long quick-package downloads allocate hundreds of MB before
         // the first transfer could start.
@@ -4043,7 +4226,11 @@ public:
                 if (!member.routes.empty()
                     || (member.type != PreciseBundleProductType::Sp3
                         && member.type != PreciseBundleProductType::Clk
-                        && member.type != PreciseBundleProductType::Att)
+                        && member.type != PreciseBundleProductType::Att
+                        && member.type != PreciseBundleProductType::SinexCrd
+                        && member.type != PreciseBundleProductType::SinexSol
+                        && member.type != PreciseBundleProductType::Gim
+                        && member.type != PreciseBundleProductType::Brdc)
                     || member.logicalKey.empty()) {
                     continue;
                 }
@@ -4605,8 +4792,8 @@ public:
             return;
         }
         auto& product = products_[visible_[row]];
-        product.selected = newState == 2
-            && !(quickBundleReady_ && product.availableDays == 0);
+        product.selected = newState == 2 && !product.missingRequired
+            && !((quickBundleReady_ || !product.updRecords.empty()) && product.availableDays == 0);
         if (newState == 2 && !product.selected) {
             ListView_RedrawItems(list_, change.iItem, change.iItem);
         }
@@ -4638,8 +4825,8 @@ public:
         if (catalogLoading_) return;
         syncing_ = true;
         for (const auto row : visible_) {
-            products_[row].selected = selected
-                && !(quickBundleReady_ && products_[row].availableDays == 0);
+            products_[row].selected = selected && !products_[row].missingRequired
+                && !((quickBundleReady_ || !products_[row].updRecords.empty()) && products_[row].availableDays == 0);
         }
         if (!visible_.empty()) ListView_RedrawItems(list_, 0,
             static_cast<int>(visible_.size() - 1));
@@ -4759,7 +4946,7 @@ public:
         }
         for (std::size_t index = 0; index < products_.size(); ++index) {
             const auto& product = products_[index];
-            if (!product.selected || product.availableDays <= 0) continue;
+            if (product.missingRequired || !product.selected || product.availableDays <= 0) continue;
             if (product.localInventoryOnly) continue;
             const std::wstring familyKey = index < indexedFamilyKeys_.size()
                 ? Utf8ToWide(indexedFamilyKeys_[index]) : L"";
@@ -4954,7 +5141,8 @@ public:
         bool hasSelection = false;
         for (std::size_t index = 0; queued == nullptr
              && index < products_.size(); ++index) {
-            if (!products_[index].selected || products_[index].localInventoryOnly) continue;
+            if (products_[index].missingRequired || !products_[index].selected
+                || products_[index].localInventoryOnly) continue;
             hasSelection = true;
             const bool indexed = index < indexedFamilyKeys_.size()
                 && !indexedFamilyKeys_[index].empty();
@@ -5004,7 +5192,8 @@ public:
             if (queued != nullptr) selected.push_back(queued->payload);
             for (std::size_t index = 0; queued == nullptr
                  && index < products_.size(); ++index) {
-                if (!products_[index].selected || products_[index].localInventoryOnly) {
+                if (products_[index].missingRequired || !products_[index].selected
+                    || products_[index].localInventoryOnly) {
                     continue;
                 }
                 selected.push_back(SnapshotSelectedProduct(index));
@@ -6125,6 +6314,7 @@ public:
         for (std::size_t index = 0; index < products_.size(); ++index) {
             auto& product = products_[index];
             if (Lower(product.id) == wanted) {
+                if (product.missingRequired) return;
                 if (product.selected != selected) {
                     product.selected = selected;
                     changed = true;
@@ -6255,7 +6445,7 @@ public:
     }
 
     void SetQuickPreset(const int preset) {
-        if (preset < 0 || preset > 6) return;
+        if (preset < 0 || preset > 4) return;
         customRules_.clear();
         customPresetName_.clear();
         SendMessageW(quickPreset_, CB_SETCURSEL, preset, 0);
@@ -6314,8 +6504,17 @@ public:
         });
         if (found == products_.end()) { snapshot.error = L"该查询结果已更新"; return; }
         const auto index = static_cast<std::size_t>(found - products_.begin());
+        if (quickBundleReady_ && index < quickBundleDisplayedKeys_.size()) {
+            const auto files = quickBundleFiles_.find(quickBundleDisplayedKeys_[index]);
+            if (files != quickBundleFiles_.end()) snapshot.files = files->second;
+        }
         const int first = CalendarOrdinal(periodStart_.year, periodStart_.month, periodStart_.day);
         const int last = CalendarOrdinal(periodEnd_.year, periodEnd_.month, periodEnd_.day);
+        if (found->missingRequired) {
+            snapshot.json = CalendarCoverageJson(first, last,
+                [](int) -> std::wstring { return L"missing"; });
+            return;
+        }
         std::set<int> available, unknown, beforeHistory;
         std::wstring historyStart;
         if (index < coverageRanges_.size()) {
@@ -6364,8 +6563,13 @@ public:
                 LoadClkHeaderRange(family, periodStart_, periodEnd_), availableDates);
         }
         if (found->category == PreciseProductCategory::UncalibratedPhaseDelay) {
+            snapshot.updRecords=found->updRecords;
+            for(auto& record:snapshot.updRecords)record.selected=found->selected&&!record.flagged;
+            const auto good=std::find_if(found->updRecords.rbegin(),found->updRecords.rend(),[](const auto& record){return !record.flagged;});
+            const auto sourceId=good!=found->updRecords.rend()?good->logicalKey
+                : found->updRecords.empty()?found->id:found->updRecords.back().logicalKey;
             const auto inputs = LoadUpdDeclaredInputs(
-                WideToUtf8(found->id), periodStart_, periodEnd_);
+                WideToUtf8(sourceId), periodStart_, periodEnd_);
             snapshot.updDate = inputs.date;
             snapshot.updFile = inputs.fileName;
             snapshot.updInputFiles = inputs.files;
@@ -6469,6 +6673,15 @@ public:
                 product.completenessPercent, 0.0, 100.0)));
             item.availableDays = product.availableDays;
             item.expectedDays = product.expectedDays;
+            item.recordCount=static_cast<int>(product.updRecords.size());
+            std::set<int> inventoryDates,flaggedDates;
+            for(const auto& record:product.updRecords){
+                const int date=record.date.year*10000+record.date.month*100+record.date.day;
+                inventoryDates.insert(date);
+                if(record.flagged){++item.flaggedRecords;flaggedDates.insert(date);}
+            }
+            item.inventoryDays=static_cast<int>(inventoryDates.size());
+            item.flaggedDays=static_cast<int>(flaggedDates.size());
             item.availability = product.expectedDays > 0
                 ? std::format(
                     L"{}/{} 天 ({:.1f}%)", product.availableDays,
@@ -6477,6 +6690,7 @@ public:
             item.status = product.status.empty() ? L"待下载" : product.status;
             item.selected = product.selected;
             item.localInventoryOnly = product.localInventoryOnly;
+            item.missingRequired = product.missingRequired;
             snapshot.products.push_back(std::move(item));
         }
         snapshot.queueRunning = queueRunning_;
@@ -6486,7 +6700,8 @@ public:
         for (const auto& item : downloadQueue_) {
             snapshot.queue.push_back({item.id, item.label,
                 FormatDate(item.start) + L"—" + FormatDate(item.end),
-                item.state, item.percent, item.selected});
+                item.state, item.percent, item.selected,
+                static_cast<int>(!item.payload.days.empty()?item.payload.days.size():std::max(0,item.payload.product.availableDays))});
         }
     }
 
@@ -6592,6 +6807,7 @@ private:
     PreciseBundlePlanResult quickBundleResult_{};
     std::unordered_set<std::wstring> quickBundleSelectionKeys_;
     std::vector<std::wstring> quickBundleDisplayedKeys_;
+    std::unordered_map<std::wstring,std::vector<std::wstring>> quickBundleFiles_;
     bool quickBundleRestoreSelection_ = false;
 };
 

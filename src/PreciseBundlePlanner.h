@@ -4,6 +4,7 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // Supported quick-download workflows. Values are deliberately
@@ -42,7 +43,9 @@ enum class PreciseBundleProductType {
     Vmf3H06,
     Vmf3H12,
     Vmf3H18,
-    Brdc
+    Brdc,
+    Dcb,
+    SinexReference
 };
 
 // Canonical fields used to prevent accidental cross-centre/product mixing.
@@ -50,6 +53,17 @@ enum class PreciseBundleProductType {
 // fields must match exactly in strict mode.  orbitInterval and clockInterval
 // are separate because a valid bundle normally uses different sampling rates
 // for those two products.
+namespace UpdPppArPreset {
+inline constexpr std::wstring_view Orbit = L"COD0MGXFIN_0000_01D_05M";
+inline constexpr std::wstring_view Clock = L"COD0MGXFIN_0000_01D_30S";
+inline constexpr std::wstring_view Dcb2022To2023 = L"CAS0MGXRAP_0000_01D_01D_DCB_BSX";
+inline constexpr std::wstring_view DcbFrom2024 = L"CAS0OPSRAP_0000_01D_01D_DCB_BIA";
+inline constexpr std::wstring_view Antex = L"IGS20_STANDARD_2247";
+constexpr std::wstring_view DcbForYear(int year) {
+    return year >= 2024 ? DcbFrom2024 : year >= 2022 ? Dcb2022To2023 : std::wstring_view{};
+}
+}
+
 struct PreciseBundleCompatibilityKey {
     std::string center;
     std::string series;
@@ -111,6 +125,10 @@ struct PreciseBundleProduct {
     // the authoritative product database before a download is started.
     bool routesDeferred = false;
     std::vector<DownloadRoute> routes;
+    std::vector<std::pair<PreciseBundleProductType, std::string>> declaredInputs;
+    bool flagged = false;
+    bool inventoryOnly = false;
+    std::string indexNote;
 };
 
 struct PreciseBundleCatalog {
@@ -156,6 +174,7 @@ struct PreciseBundleManifestEntry {
     // a later/rebuilt database can otherwise describe a different revision.
     PreciseBundleCompatibilityKey compatibility;
     std::string interval;
+    bool selectedByDefault = true;
 };
 
 struct PreciseBundleDateStatus {
@@ -191,17 +210,24 @@ struct PreciseBundlePlanResult {
     std::string error;
     std::string warning;
     bool routesDeferred = false;
+    int auxiliaryCompleteDays = 0;
+    int flaggedUpdCount = 0;
 };
 
 // Normalization and compatibility helpers are public to keep database/UI
 // adapters deterministic and unit-testable.
 std::string NormalizeBundleToken(const std::string& value);
+std::string NormalizeBundleFileName(const std::string& value);
 PreciseBundleCompatibilityKey MakeBundleCompatibilityKey(
     const PreciseBundleProduct& product);
 bool BundleProductsCompatible(const PreciseBundleCompatibilityKey& a,
                               const PreciseBundleCompatibilityKey& b,
                               bool strict = true);
+PreciseBundleRequest MakeDefaultPreciseBundleRequest(
+    PreciseBundlePlan plan, const QueryDate& start, const QueryDate& end);
 std::vector<PreciseBundleProductType> RequiredBundleProductTypes(
+    PreciseBundlePlan plan);
+std::vector<PreciseBundleProductType> OptionalBundleProductTypes(
     PreciseBundlePlan plan);
 
 PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,

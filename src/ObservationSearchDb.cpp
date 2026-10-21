@@ -4594,6 +4594,31 @@ std::vector<BitmapBlock> SignalDaysForToken(
     const int rinexFamily = 0) {
     std::vector<BitmapBlock> result;
     if (stationIndex >= index.signalRangesByStation.size()) return result;
+    const bool gpsPair = token.system == "G" && token.code == "DUAL_L1_L2";
+    const bool gloPair = token.system == "R" && token.code == "DUAL_G1_G2";
+    const bool galPair = token.system == "E" && token.code == "DUAL_E1_E5A";
+    if (gpsPair || gloPair || galPair) {
+        if (rinexFamily == 2) return result;
+        const auto bandDays = [&](const char band) {
+            std::vector<BitmapBlock> days;
+            // A tracking alternative qualifies only where its code and phase coexist.
+            const std::string_view trackingCodes = galPair
+                ? (band == '1' ? "ABCXZ" : "IQX")
+                : gloPair ? "CP" : (band == '1' ? "CSLXPWYMN" : "CDSLXPWYMN");
+            for (const char tracking : trackingCodes) {
+                const std::string suffix{band, tracking};
+                const auto code = SignalDaysForToken(index, stationIndex,
+                    {token.system, "C" + suffix}, firstOrdinal, lastOrdinal, 34);
+                if (code.empty()) continue;
+                const auto phase = SignalDaysForToken(index, stationIndex,
+                    {token.system, "L" + suffix}, firstOrdinal, lastOrdinal, 34);
+                OrBlocks(days, IntersectBlocks(code, phase), firstOrdinal, lastOrdinal);
+            }
+            SortBitmapBlocks(days);
+            return days;
+        };
+        return IntersectBlocks(bandDays('1'), bandDays(galPair ? '5' : '2'));
+    }
     const auto& rangesByToken = index.signalRangesByStation[stationIndex];
     for (const int family : {0, rinexFamily == 0 ? 2 : rinexFamily,
                             rinexFamily == 0 ? 34 : -1}) {
@@ -4713,6 +4738,10 @@ bool SignalMatchesDay(
         if (!BlocksHaveAnyDayInRange(known, ordinal, ordinal)) return false;
     }
     const auto contains = [&](const PreparedSignalToken& token) {
+        if (token.code.starts_with("DUAL_")) {
+            const auto days = SignalDaysForToken(index, stationIndex, token, ordinal, ordinal, rinexFamily);
+            return BlocksHaveAnyDayInRange(days, ordinal, ordinal);
+        }
         const auto& rangesByToken = index.signalRangesByStation[stationIndex];
         for (const int family : {0, rinexFamily == 0 ? 2 : rinexFamily,
                                 rinexFamily == 0 ? 34 : -1}) {
@@ -5494,8 +5523,12 @@ ObservationQualityCatalogue LoadObservationQualityCatalogue(
         const auto token = QualitySystemToken(value);
         return token.empty() ? std::string("unsupported") : token;
     };
-    const auto completenessSystem = selectedSystem(options.observationCompletenessSystem);
-    const auto multipathSystem = selectedSystem(options.multipathSystem);
+    const bool completenessEach = options.observationCompletenessSystem == "selected";
+    const bool multipathEach = options.multipathSystem == "selected";
+    const auto requiredSystems = CanonicalSatelliteSystemTokens(
+        EffectiveFilterField(options.systemsInclude, options.includeSystems));
+    const auto completenessSystem = completenessEach ? std::string{} : selectedSystem(options.observationCompletenessSystem);
+    const auto multipathSystem = multipathEach ? std::string{} : selectedSystem(options.multipathSystem);
     const auto cycleSlipsSystem = selectedSystem(options.cycleSlipsSystem);
     std::size_t rowIndex = 0;
     for (const auto& requestedStation : stationKeys) {
@@ -5533,11 +5566,18 @@ ObservationQualityCatalogue LoadObservationQualityCatalogue(
             double dailyActual = 0.0;
             bool hasExpected = false;
             bool hasActual = false;
+            struct SystemCompleteness { double expected = 0, actual = 0; bool hasExpected = false, hasActual = false; };
+            std::map<std::string, SystemCompleteness> systemCompleteness;
             ForEachFlatJsonNumber(ColumnText(rows.get(), 2),
                 [&](const std::string_view key, const double value) {
                     if (value < 0.0) return;
                     const bool actual = key.size() >= 4
                         && key.substr(key.size() - 4) == " Obs";
+                    if (completenessEach && std::isfinite(value)) {
+                        auto& metric = systemCompleteness[QualitySystemToken(key)];
+                        if (actual) { metric.actual += value; metric.hasActual = true; }
+                        else { metric.expected += value; metric.hasExpected = true; }
+                    }
                     if (!completenessSystem.empty()
                         && QualitySystemToken(key) != completenessSystem) return;
                     if (actual) {
@@ -5553,6 +5593,20 @@ ObservationQualityCatalogue LoadObservationQualityCatalogue(
                 && std::isfinite(dailyActual)) {
                 daily.observationCompleteness = std::clamp(
                     100.0 * dailyActual / dailyExpected, 0.0, 100.0);
+            }
+            if (completenessEach) {
+                daily.observationCompleteness.reset();
+                bool known = !requiredSystems.empty();
+                double minimum = 100.0;
+                for (const auto& system : requiredSystems) {
+                    const auto found = systemCompleteness.find(system);
+                    if (found == systemCompleteness.end() || !found->second.hasExpected
+                        || !found->second.hasActual || found->second.expected <= 0) { known = false; break; }
+                    const double value = 100.0 * found->second.actual / found->second.expected;
+                    if (!std::isfinite(value)) { known = false; break; }
+                    minimum = std::min(minimum, std::clamp(value, 0.0, 100.0));
+                }
+                if (known) daily.observationCompleteness = minimum;
             }
             ForEachFlatJsonNumber(ColumnText(rows.get(), 3),
                 [&](const std::string_view key, const double value) {
@@ -5585,17 +5639,36 @@ ObservationQualityCatalogue LoadObservationQualityCatalogue(
                 daily.meanAbsoluteResidualMillimeters = residualSum / residualValues;
             double multipathSum = 0.0;
             int multipathValues = 0;
+            std::map<std::string, std::pair<double, int>> systemMultipath;
             ForEachFlatJsonNumber(ColumnText(rows.get(), 6),
                 [&](const std::string_view key, const double value) {
                     // Zero denotes an unavailable constellation/metric in the
                     // upstream payload and must not make a station look better.
                     if (value <= 0.0 || (!multipathSystem.empty()
                         && QualitySystemToken(key) != multipathSystem)) return;
+                    if (multipathEach && std::isfinite(value)) {
+                        auto& metric = systemMultipath[QualitySystemToken(key)];
+                        metric.first += value;
+                        ++metric.second;
+                    }
                     multipathSum += value;
                     ++multipathValues;
                 });
             if (multipathValues > 0 && std::isfinite(multipathSum))
                 daily.meanMultipathCentimeters = multipathSum / multipathValues;
+            if (multipathEach) {
+                daily.meanMultipathCentimeters.reset();
+                bool known = !requiredSystems.empty();
+                double maximum = 0.0;
+                for (const auto& system : requiredSystems) {
+                    const auto found = systemMultipath.find(system);
+                    if (found == systemMultipath.end() || found->second.second == 0) { known = false; break; }
+                    const double value = found->second.first / found->second.second;
+                    if (!std::isfinite(value)) { known = false; break; }
+                    maximum = std::max(maximum, value);
+                }
+                if (known) daily.meanMultipathCentimeters = maximum;
+            }
             double dailyCycleSlips = 0.0;
             bool hasCycleSlipValue = false;
             ForEachFlatJsonNumber(ColumnText(rows.get(), 7),

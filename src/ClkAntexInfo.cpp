@@ -180,7 +180,8 @@ std::wstring ClkHeaderDetailsJson(const ClkHeaderRange& headers,const std::vecto
 
 void ApplyClkDeclaredAntex(const PreciseBundleRequest& request,PreciseBundleCatalog& catalog,
     PreciseBundlePlanResult& plan,std::vector<std::wstring>& warnings) {
-    if(request.plan!=PreciseBundlePlan::WumPridePppAr||!plan.valid)return;
+    if((request.plan!=PreciseBundlePlan::WumPridePppAr
+        &&request.plan!=PreciseBundlePlan::NetworkRtkPppRtk)||!plan.valid)return;
     const auto all=LoadAntexAvailabilityCatalog();
     std::map<std::string,ClkHeaderRange> headerFamilies;
     std::map<std::string,PreciseBundleProduct> selectedProducts;
@@ -188,6 +189,16 @@ void ApplyClkDeclaredAntex(const PreciseBundleRequest& request,PreciseBundleCata
     int unresolvedDays=0;plan.completeDays=0;plan.missingDates.clear();plan.missingProductTypes.clear();plan.manifest.clear();
     std::set<std::string> manifestKeys;
     for(auto& day:plan.dates) {
+        const auto availableClock=std::ranges::find(day.members,PreciseBundleProductType::Clk,&PreciseBundleManifestEntry::type);
+        if(availableClock==day.members.end()) {
+            // Preserve date-effective calibration candidates for browsing
+            // when the clock needed to verify its declared model is missing.
+            for(const auto& member:day.members)if(member.type==PreciseBundleProductType::Antex) {
+                const auto source=std::ranges::find(catalog.products,member.logicalKey,&PreciseBundleProduct::logicalKey);
+                if(source!=catalog.products.end())selectedProducts.try_emplace(source->logicalKey,*source);
+            }
+            ++unresolvedDays;
+        } else {
         std::erase_if(day.members,[](const auto& m){return m.type==PreciseBundleProductType::Antex;});
         std::erase(day.missing,PreciseBundleProductType::Antex);
         const auto clock=std::ranges::find(day.members,PreciseBundleProductType::Clk,&PreciseBundleManifestEntry::type);
@@ -210,6 +221,7 @@ void ApplyClkDeclaredAntex(const PreciseBundleRequest& request,PreciseBundleCata
             }
         }
         if(!resolved){day.missing.push_back(PreciseBundleProductType::Antex);++unresolvedDays;}
+        }
         day.complete=day.missing.empty();if(day.complete)++plan.completeDays;
         else {plan.missingDates.push_back(day.date);for(auto type:day.missing)
             if(std::ranges::find(plan.missingProductTypes,type)==plan.missingProductTypes.end())plan.missingProductTypes.push_back(type);}
@@ -221,7 +233,7 @@ void ApplyClkDeclaredAntex(const PreciseBundleRequest& request,PreciseBundleCata
     std::erase_if(catalog.products,[](const auto& p){return p.type==PreciseBundleProductType::Antex;});
     for(auto& [key,product]:selectedProducts)catalog.products.push_back(std::move(product));
     plan.complete=plan.completeDays==plan.expectedDays;
-    if(unresolvedDays)warnings.push_back(std::format(L"CLK 的 ANTEX 版本有 {} 天未确认；已选择能匹配的文件，详情中可查看头声明。",unresolvedDays));
+    if(unresolvedDays)warnings.push_back(std::format(L"CLK 的 ANTEX 版本有 {} 天未确认；清单保留可用候选文件，需核对模型。",unresolvedDays));
     if(!modelOnly.empty())warnings.push_back(L"部分 CLK 引用未锁定历史版本的 ANTEX；选用同模型官方当前文件，其内容可能随更新改变。");
     if(!unmatched.empty()) {
         std::wstring text=L"ANTEX 库内未匹配：";int count=0;

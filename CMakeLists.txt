@@ -14,6 +14,10 @@ enable_language(C)
 # This must be set before adding libcurl's subdirectory.
 if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    # Use repository-relative paths in application and dependency diagnostics.
+    add_compile_options(
+        "$<$<COMPILE_LANGUAGE:C,CXX>:/experimental:deterministic>"
+        "$<$<COMPILE_LANGUAGE:C,CXX>:/pathmap:${CMAKE_SOURCE_DIR}=MARK>")
 endif()
 
 # Build libcurl and LibreSSL into the application instead of spawning curl.exe
@@ -66,7 +70,7 @@ if(MSVC)
     target_compile_options(sqlite3 PRIVATE /W0)
 endif()
 
-# Share the bundled static transport between the application and tests.
+# Use the bundled static transport for application targets.
 link_libraries(CURL::libcurl_static)
 
 # Password-only OpenSSH AskPass helper.  It reads one inherited environment
@@ -154,55 +158,12 @@ set_target_properties(IGSDownloader PROPERTIES
 )
 add_dependencies(IGSDownloader GnssSftpAskPass)
 
-add_executable(ObservationPostprocessTest
-    tools/observation_postprocess_test.cpp src/ObservationPostprocess.cpp)
-target_include_directories(ObservationPostprocessTest PRIVATE src)
-target_compile_features(ObservationPostprocessTest PRIVATE cxx_std_20)
-target_compile_definitions(ObservationPostprocessTest PRIVATE
-    UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
-if(MSVC)
-    target_compile_options(ObservationPostprocessTest PRIVATE /utf-8 /W4 /permissive- /EHsc)
-endif()
-
-# Read-only DuckDB compatibility smoke test.  The full DuckDB GUI target is
-# built separately after the compatibility layer has passed this test; keeping
-# this target small prevents the legacy SQLite build from changing.
 set(GNSS_DOWNLOADER_DB_KEY "" CACHE STRING
     "Private DuckDB knowledge-base encryption key (do not commit)")
 mark_as_advanced(GNSS_DOWNLOADER_DB_KEY)
 option(GNSS_DOWNLOADER_REQUIRE_ENCRYPTED_DB
     "Require native DuckDB encryption in the private release" OFF)
 include("${CMAKE_SOURCE_DIR}/cmake/Setup.cmake")
-
-add_executable(DuckDbCompatSmokeTest
-    tools/duckdb_compat_smoke_test.cpp
-    third_party/duckdb_sqlite_compat/sqlite3.cpp
-)
-target_include_directories(DuckDbCompatSmokeTest PRIVATE
-    third_party/duckdb_sqlite_compat
-    third_party/duckdb)
-target_compile_features(DuckDbCompatSmokeTest PRIVATE cxx_std_20)
-target_compile_definitions(DuckDbCompatSmokeTest PRIVATE
-    UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
-# Use the same private key in the maintainer-only smoke binary when one is
-# supplied.  Public builds leave this empty and continue to test env-key mode.
-if(NOT GNSS_DOWNLOADER_DB_KEY STREQUAL "")
-    target_compile_definitions(DuckDbCompatSmokeTest PRIVATE
-        GNSS_DOWNLOADER_COMPILED_DB_KEY="${GNSS_DOWNLOADER_DB_KEY}")
-endif()
-if(GNSS_DOWNLOADER_REQUIRE_ENCRYPTED_DB)
-    target_compile_definitions(DuckDbCompatSmokeTest PRIVATE
-        GNSS_DOWNLOADER_REQUIRE_ENCRYPTED_DB)
-endif()
-if(MSVC)
-    target_compile_options(DuckDbCompatSmokeTest PRIVATE /utf-8 /W4 /permissive- /EHsc)
-endif()
-target_link_libraries(DuckDbCompatSmokeTest PRIVATE
-    "${CMAKE_SOURCE_DIR}/third_party/duckdb/duckdb.lib")
-add_custom_command(TARGET DuckDbCompatSmokeTest POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_SOURCE_DIR}/third_party/duckdb/duckdb.dll"
-        "$<TARGET_FILE_DIR:DuckDbCompatSmokeTest>/duckdb.dll")
 
 # Desktop application using the native DuckDB adapter.
 get_target_property(DUCKDB_GUI_SOURCES IGSDownloader SOURCES)

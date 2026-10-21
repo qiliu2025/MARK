@@ -203,6 +203,8 @@ struct ObservationRangeOptions {
     // comma/semicolon/pipe separated tokens such as ``GPS:C1C`` or
     // ``BDS:C2I``.  The query engine evaluates these against the dated
     // Site Log Plus capability intervals, not against a station-wide union.
+    // GPS:DUAL_L1_L2, GLO:DUAL_G1_G2 and GAL:DUAL_E1_E5A require code
+    // and phase on both bands, accepting any indexed tracking alternative per date.
     std::string signalCodesInclude;
     std::string signalCodesExclude;
 
@@ -229,6 +231,7 @@ struct ObservationRangeOptions {
     // only to components/constellations within one day, never across dates.
     bool observationCompletenessEnabled = false;
     double minimumObservationCompletenessPercent = 90.0;
+    // "selected" requires every included system independently on each date.
     std::string observationCompletenessSystem;
     bool latencyEnabled = false;
     double maximumMeanLatencyHours = 24.0;

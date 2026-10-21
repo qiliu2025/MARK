@@ -139,6 +139,7 @@
     const text = localizeUiText(item.message), limit = item.limit || (item.kind === 'warning' ? 360 : 260);
     return clip && text.length > limit ? text.slice(0, limit - 1) + '…' : text;
   };
+  const runtimeSummary = message => window.GnssRuntimeLog.summarizeMessage(message, uiPrefs.language, localizeUiText);
   function renderInfo() {
     const labels = { notice:localizeUiText('提示'), warning:localizeUiText('警告'), download:localizeUiText('下载') };
     const rows = state.infoFilter === 'all' ? state.info : state.info.filter(item => item.kind === state.infoFilter);
@@ -148,7 +149,16 @@
     setText('#infoDownloadCount', state.info.filter(item => item.kind === 'download').length);
     setText('#infoSummary', state.info.length ? uiText(`${state.info.length} logs`, `共 ${state.info.length} 条运行信息`) : '运行提示、筛选结果和下载状态');
     const scroll = $('#infoScroll');
-    setHtml(scroll, rows.length ? rows.map(item => `<div class="info-line ${item.kind}" data-info-id="${item.id}"><time>${esc(item.time)}</time><span class="info-kind">${labels[item.kind] || localizeUiText('提示')}</span><span class="info-message">${esc(runtimeMessageText(item, true))}</span><button type="button" class="info-dismiss" data-info-dismiss="${item.id}" title="${localizeUiText('删除此条信息')}" aria-label="${localizeUiText('删除此条信息')}">×</button></div>`).join('') : `<div class="info-empty">${localizeUiText('当前分类暂无信息')}</div>`);
+    setHtml(scroll, rows.length ? rows.map(item => {
+      const summary = runtimeSummary(item.message), full = runtimeMessageText(item);
+      const detailed = Boolean(summary) || full.length > (item.limit || 260);
+      const details = detailed ? `<details class="info-details" data-info-details="${item.id}"${item.detailsOpen ? ' open' : ''}><summary>${uiText('Details', '详情')}</summary><div class="info-detail-text">${esc(summary ? full.replace(/;\s+|；/g, '\n') : full)}</div></details>` : '';
+      return `<div class="info-line ${item.kind}" data-info-id="${item.id}"><time>${esc(item.time)}</time><span class="info-kind">${labels[item.kind] || localizeUiText('提示')}</span><span class="info-message">${esc(summary || runtimeMessageText(item, true))}</span>${details}<button type="button" class="info-dismiss" data-info-dismiss="${item.id}" title="${localizeUiText('删除此条信息')}" aria-label="${localizeUiText('删除此条信息')}">×</button></div>`;
+    }).join('') : `<div class="info-empty">${localizeUiText('当前分类暂无信息')}</div>`);
+    for (const details of $$('[data-info-details]', scroll)) details.addEventListener('toggle', () => {
+      const item = state.info.find(item => item.id === Number(details.dataset.infoDetails));
+      if (item) item.detailsOpen = details.open;
+    });
     const newest = rows.length ? scroll.lastElementChild : null;
     if (newest) newest.scrollIntoView({ block:'start' });
   }
@@ -572,7 +582,27 @@
     renderCoverage($('#productDateCoverage'),message.coverage);
     renderClkAntex(message.antex);
     renderUpdInputs(message.upd);
+    renderUpdRecords(message.updRecords);
+    renderPreciseFiles(message.files);
     if(message.error) setText('#productCoverageNote',message.error);
+  }
+
+  function renderPreciseFiles(files) {
+    const target=$('#preciseFilesInfo');
+    if(!target)return;
+    const names=Array.isArray(files)?files:[];
+    setHtml(target,names.length?`<details><summary>${esc(uiText(`Files in this series (${names.length})`,`本系列文件（${names.length}）`))}</summary>${names.map(name=>`<p class="coverage-note" data-no-translate>${esc(name)}</p>`).join('')}</details>`:'');
+  }
+
+  function renderUpdRecords(records) {
+    const target=$('#updRecordsInfo');
+    if(!target)return;
+    const files=Array.isArray(records)?records:[],bad=files.filter(file=>file.flagged);
+    if(!files.length){setHtml(target,'');return;}
+    const recordText=file=>`<p class="coverage-note"><b data-no-translate>${esc(file.date)}</b> · <span>${esc(uiText(file.flagged?'Excluded':'Eligible',file.flagged?'已排除':'符合条件'))}</span><br><span data-no-translate>${esc(file.fileName)}</span>${file.flagged?`<br>DCB: <span data-no-translate>${esc(file.dcbFileName)}</span>`:''}</p>`;
+    setHtml(target,`<p class="coverage-note">${esc(uiText('Coverage counts dates with eligible UPD records. Flagged records are excluded from the coverage and default selection.','覆盖率统计符合条件的 UPD 日期；有问题的记录不计入覆盖率，也不纳入默认选择。'))}</p>`
+      +(bad.length?`<details><summary>${esc(uiText(`Flagged records (${bad.length}; excluded)`,`有问题的记录（${bad.length}；已排除）`))}</summary><p class="coverage-note">${esc(uiText('The declared DCB date differs from the UPD date.','声明的 DCB 日期与 UPD 日期不同。'))}</p>${bad.map(recordText).join('')}</details>`:'')
+      +`<details><summary>${esc(uiText(`All UPD records (${files.length})`,`全部 UPD 记录（${files.length}）`))}</summary>${files.map(recordText).join('')}</details>`);
   }
 
   function renderUpdInputs(info) {
@@ -694,18 +724,42 @@
     return Boolean(text && text !== '—' && text !== '-');
   }
 
+  function precisePercent(product) {
+    const days=Number(product.availableDays), total=Number(product.expectedDays);
+    return clamp(Number.isFinite(days)&&total>0 ? 100*days/total : Number(product.completeness)||0,0,100);
+  }
+
+  function preciseAvailability(product) {
+    if(Number(product.expectedDays)>0 && Number.isFinite(Number(product.availableDays))) {
+      const days=product.availableDays,total=product.expectedDays,percent=precisePercent(product).toFixed(1);
+      return uiText(`${days}/${total} days (${percent}%)`,`${days}/${total} 天 (${percent}%)`);
+    }
+    return localizeUiText(product.availability || `${Number(precisePercent(product).toFixed(1))}%`);
+  }
+
   function preciseAccess(product, pct) {
-    if (product.localInventoryOnly) return { label:'本地记录', klass:'partial', detail:'未配置 UPD 在线下载地址；覆盖率表示本地存档记录。' };
+    if (product.missingRequired) return {label:uiText('Missing','缺少'),klass:'missing',detail:product.status};
+    if (product.status === '声明文件未收录精确下载路线。') return { label:uiText('Missing route','缺少路线'), klass:'partial', detail:product.status };
+    if (/UPD 有问题/.test(product.status || '')) return { label:uiText('Flagged','有问题'), klass:'missing', detail:product.status };
+    if (product.localInventoryOnly) return { label:Number(product.flaggedRecords)>0?uiText(`Local · ${product.flaggedRecords} flagged`,`本地 · ${product.flaggedRecords} 有问题`):'本地记录', klass:'partial', detail:Number(product.recordCount)>0?updSeriesSummary(product):'未配置 UPD 在线下载地址；覆盖率表示本地存档记录。' };
     const status = String(product.status || '');
     const dateResolved = /按日期|日期读取|高速索引/.test(status) ||
       (!hasPreciseValue(product.preferredFileName) && !hasPreciseValue(product.sources));
-    if (pct <= 0) return { label:'不可用', klass:'missing', detail:'所选日期范围内没有可下载记录' };
-    if (dateResolved) return { label:'按日期解析', klass:pct < 99 ? 'partial' : '', detail:'下载时按所选日期解析实际文件名与可用镜像' };
-    if (pct < 99) return { label:'部分可用', klass:'partial', detail:'已解析固定文件与镜像，但所选日期范围不完整' };
+    if ((product.availableDays !== undefined ? Number(product.availableDays) <= 0 : pct <= 0)) return { label:'不可用', klass:'missing', detail:'所选日期范围内没有可下载记录' };
+    if (dateResolved) return { label:'按日期解析', klass:pct < 100 ? 'partial' : '', detail:'下载时按所选日期解析实际文件名与可用镜像' };
+    if (pct < 100) return { label:'部分可用', klass:'partial', detail:uiText('Files and mirrors are resolved; the selected date range is incomplete.','已解析固定文件与镜像，但所选日期范围不完整') };
     return { label:'已解析', klass:'', detail:'文件名与候选镜像已经解析' };
   }
 
+  function updSeriesSummary(product) {
+    return uiText(`${product.inventoryDays} indexed days; ${product.availableDays} eligible days; ${product.flaggedRecords} flagged records excluded. UPD download URLs are not configured.`,`${product.inventoryDays} 个日期有记录；${product.availableDays} 个日期符合条件；已排除 ${product.flaggedRecords} 条问题记录。尚未配置 UPD 在线下载地址。`);
+  }
+
   function preciseStatusSummary(product, fallback) {
+    if (product.missingRequired) return product.status;
+    if(Number(product.recordCount)>0)return updSeriesSummary(product);
+    if (product.status === '声明文件未收录精确下载路线。') return product.status;
+    if (/UPD 有问题/.test(product.status || '')) return product.status;
     if (product.localInventoryOnly) return '未配置 UPD 在线下载地址；覆盖率表示本地存档记录。';
     const parts = String(product.status || '').split(/[；;]/).map(part=>part.trim()).filter(Boolean)
       .filter(part=>!/^(?:查询)?范围(?:可用|完整)(?:[：:\s\d]|$)|^\d+\s*\/\s*\d+\s*天/.test(part));
@@ -714,10 +768,11 @@
 
   function preciseRangeLabel(availability, pct) {
     const text = String(availability || '').trim();
-    if (!text) return { range:`${pct}%`, percent:'' };
+    const percent = pct > 0 && pct < 0.1 ? '<0.1%' : `${Number(pct.toFixed(1))}%`;
+    if (!text) return { range:percent, percent:'' };
     const withoutPercent = text.replace(/\s*[（(]\s*\d+(?:\.\d+)?%\s*[）)]\s*$/, '').trim();
-    if (withoutPercent !== text || /天/.test(text)) return { range:withoutPercent || `${pct}%`, percent:`${pct}%` };
-    return { range:text, percent:text === `${pct}%` ? '' : `${pct}%` };
+    if (withoutPercent !== text || /天/.test(text)) return { range:withoutPercent || percent, percent };
+    return { range:text, percent:text === percent ? '' : percent };
   }
 
   function sinexPeriodLabel(product) {
@@ -781,12 +836,12 @@
       return;
     }
     setHtml(body, rows.slice(offset, end).map(({product,index}) => {
-      const pct = clamp(Number(product.completeness) || 0,0,100);
-      const klass = pct >= 99 ? '' : pct > 0 ? 'partial' : 'missing';
-      const availability = product.availability || `${pct}%`;
+      const pct = precisePercent(product);
+      const klass = pct >= 100 ? '' : pct > 0 ? 'partial' : 'missing';
+      const availability = preciseAvailability(product);
       const access = preciseAccess(product,pct);
       const range = preciseRangeLabel(availability,pct);
-      return `<tr data-product-index="${index}" class="${product.selected ? 'is-selected' : ''}"><td class="check-col"><button class="row-check ${product.selected ? 'checked' : ''}" data-product-check="${index}" aria-label="${esc(uiText(`${product.selected ? 'Deselect' : 'Select'} product ${product.id}`, `${product.selected ? '取消选择' : '选择'}产品 ${product.id}`))}" aria-pressed="${product.selected ? 'true' : 'false'}"></button></td><td class="station-code" title="${esc(localizeUiText(product.name || product.id))}">${esc(product.id)}</td><td>${esc(preciseProductTypeLabel(product.family))}</td><td>${esc(product.center)}</td><td>${esc(sinexPeriodLabel(product) || product.latency || '—')}</td><td>${esc(preciseSatelliteSystems(product))}</td><td>${esc(product.interval || '—')}</td><td class="product-access-cell"><span class="status-pill ${access.klass}" title="${esc(localizeUiText(access.detail))}">${esc(localizeUiText(access.label))}</span></td><td class="product-availability-cell" title="${esc(availability)}"><span class="availability ${klass}"><span class="availability-track"><i style="width:${pct}%"></i></span><span class="availability-copy"><b>${esc(range.range)}</b>${range.percent ? `<small>${esc(range.percent)}</small>` : ''}</span></span></td></tr>`;
+      return `<tr data-product-index="${index}" class="${product.selected ? 'is-selected' : ''}"><td class="check-col"><button class="row-check ${product.selected ? 'checked' : ''}" data-product-check="${index}" ${product.missingRequired ? 'disabled aria-disabled="true"' : ''} aria-label="${esc(uiText(`${product.selected ? 'Deselect' : 'Select'} product ${product.id}`, `${product.selected ? '取消选择' : '选择'}产品 ${product.id}`))}" aria-pressed="${product.selected ? 'true' : 'false'}"></button></td><td class="station-code" title="${esc(localizeUiText(product.name || product.id))}">${esc(product.id)}</td><td>${esc(preciseProductTypeLabel(product.family))}</td><td>${esc(product.center)}</td><td>${esc(sinexPeriodLabel(product) || product.latency || '—')}</td><td>${esc(preciseSatelliteSystems(product))}</td><td>${esc(product.interval || '—')}</td><td class="product-access-cell"><span class="status-pill ${access.klass}" title="${esc(localizeUiText(access.detail))}">${esc(localizeUiText(access.label))}</span></td><td class="product-availability-cell" title="${esc(availability)}"><span class="availability ${klass}"><span class="availability-track"><i style="width:${pct}%"></i></span><span class="availability-copy"><b>${esc(range.range)}</b>${range.percent ? `<small>${esc(range.percent)}</small>` : ''}</span></span></td></tr>`;
     }).join(''));
   }
 
@@ -794,7 +849,7 @@
     if (!product) return;
     state.detailProduct=product.id;state.detailProductFamily=product.family;state.productCoverage=null;
     state.productCoverageRequest=String(++state.detailRequestSerial);
-    const pct = clamp(Number(product.completeness) || 0,0,100);
+    const pct = precisePercent(product);
     const access = preciseAccess(product,pct);
     const hasFile = hasPreciseValue(product.preferredFileName);
     const hasSources = hasPreciseValue(product.sources);
@@ -802,9 +857,9 @@
       ? `${hasFile ? `<div class="detail-field wide"><span>首选文件名</span><b title="${esc(product.preferredFileName)}">${esc(product.preferredFileName)}</b></div>` : ''}${hasSources ? `<div class="detail-field wide"><span>候选数据源</span><b title="${esc(product.sources)}">${esc(product.sources)}</b></div>` : ''}`
       : `<div class="detail-field wide"><span>文件与下载源</span><b>${esc(localizeUiText(access.detail))}</b></div>`;
     const statusSummary = preciseStatusSummary(product,access.detail);
-    const updFields = /^UPD/.test(product.family) ? `<div class="detail-field wide" id="updInputsInfo"><span>${esc(localizeUiText('UPD 文件头声明的配套产品'))}</span></div>` : '';
+    const updFields = !product.missingRequired && /^UPD/.test(product.family) ? `<div class="detail-field wide" id="updRecordsInfo"></div><div class="detail-field wide" id="updInputsInfo"><span>${esc(localizeUiText('UPD 文件头声明的配套产品'))}</span></div>` : '';
     const intervalField=product.formatVersion?`<div class="detail-field"><span>格式版本</span><b>${esc(product.formatVersion)}</b></div>`:`<div class="detail-field"><span>采样间隔</span><b>${esc(product.interval || '—')}</b></div>`;
-    setHtml($('#productDetail'), `<div class="detail-id">${esc(product.id)}</div>${product.name ? `<p class="detail-name">${esc(localizeUiText(product.name))}</p>` : ''}<section class="product-info"><div class="detail-grid"><div class="detail-field"><span>产品类型</span><b>${esc(preciseProductTypeLabel(product.family))}</b></div><div class="detail-field"><span>分析中心</span><b>${esc(preciseCenterFullName(product.center))}</b></div><div class="detail-field"><span>${esc(localizeUiText(product.solutionClass?'发布等级':'产品等级'))}</span><b>${esc(product.latency || '—')}</b></div>${product.solutionClass?`<div class="detail-field"><span>解算周期</span><b>${esc(sinexPeriodLabel(product))}</b></div>`:''}<div class="detail-field"><span>卫星系统</span><b>${esc(preciseSatelliteSystems(product))}</b></div>${intervalField}<div class="detail-field"><span>获取方式</span><b>${esc(localizeUiText(access.label))}</b></div><div class="detail-field wide"><span>${esc(localizeUiText(product.localInventoryOnly ? '本地记录覆盖率' : '范围完整性'))}</span><b>${esc(product.availability || `${pct}%`)}</b><div class="detail-progress"><i style="width:${pct}%"></i></div><div id="productDateCoverage" class="coverage-compact-slot"><p class="coverage-note">${esc(localizeUiText('正在读取日期覆盖…'))}</p></div><p id="productCoverageNote" class="coverage-note"></p></div>${resolvedFields}${updFields}${/^CLK/.test(product.family)?`<div class="detail-field wide clk-antex-info" id="clkAntexInfo"><span>CLK 使用的 ANTEX</span><p class="coverage-note">正在读取 CLK 头信息…</p></div>`:''}<div class="detail-field wide"><span>索引说明</span><b>${esc(localizeUiText(statusSummary))}</b></div></div></section>`);
+    setHtml($('#productDetail'), `<div class="detail-id">${esc(product.id)}</div>${product.name ? `<p class="detail-name">${esc(localizeUiText(product.name))}</p>` : ''}<section class="product-info"><div class="detail-grid"><div class="detail-field"><span>产品类型</span><b>${esc(preciseProductTypeLabel(product.family))}</b></div><div class="detail-field"><span>分析中心</span><b>${esc(preciseCenterFullName(product.center))}</b></div><div class="detail-field"><span>${esc(localizeUiText(product.solutionClass?'发布等级':'产品等级'))}</span><b>${esc(product.latency || '—')}</b></div>${product.solutionClass?`<div class="detail-field"><span>解算周期</span><b>${esc(sinexPeriodLabel(product))}</b></div>`:''}<div class="detail-field"><span>卫星系统</span><b>${esc(preciseSatelliteSystems(product))}</b></div>${intervalField}<div class="detail-field"><span>获取方式</span><b>${esc(localizeUiText(access.label))}</b></div><div class="detail-field wide"><span>${esc(Number(product.recordCount)>0?uiText('Eligible inventory coverage','符合条件的记录覆盖率'):localizeUiText(product.localInventoryOnly ? '本地记录覆盖率' : '范围完整性'))}</span><b>${esc(preciseAvailability(product))}</b><div class="detail-progress"><i style="width:${pct}%"></i></div><div id="productDateCoverage" class="coverage-compact-slot"><p class="coverage-note">${esc(localizeUiText('正在读取日期覆盖…'))}</p></div><p id="productCoverageNote" class="coverage-note"></p></div>${resolvedFields}<div class="detail-field wide" id="preciseFilesInfo"></div>${updFields}${!product.missingRequired && /^CLK/.test(product.family)?`<div class="detail-field wide clk-antex-info" id="clkAntexInfo"><span>CLK 使用的 ANTEX</span><p class="coverage-note">正在读取 CLK 头信息…</p></div>`:''}<div class="detail-field wide"><span>索引说明</span><b>${esc(localizeUiText(statusSummary))}</b></div></div></section>`);
     post('product-coverage',{product:product.id,family:product.family,request:state.productCoverageRequest});
   }
 
@@ -1033,6 +1088,7 @@
     const active = running[0];
     const folder = precise ? current.preciseFolder : current.folder;
     const status = precise ? current.preciseStatus : current.status;
+    const statusSummary = runtimeSummary(status) || status;
     const percent = precise ? Number(current.preciseProgress || 0) : state.progress;
     // Keep the dock summary short; the plan and tooltip show the full item ID.
     const selectionText = active
@@ -1044,8 +1100,8 @@
     badge.textContent = outstanding > 99 ? '99+' : String(outstanding);
     badge.classList.toggle('hidden', outstanding === 0);
     setText('#downloadFolder', folder || '尚未设置保存目录'); $('#downloadFolder').title = folder || '';
-    setText('#downloadStatus', status || (busy ? '正在处理任务' : '等待任务'));
-    $('#downloadStatus').title = localizeUiText(status || (busy ? '正在处理任务' : '等待任务'));
+    setText('#downloadStatus', statusSummary || (busy ? '正在处理任务' : '等待任务'));
+    $('#downloadStatus').title = localizeUiText(statusSummary || (busy ? '正在处理任务' : '等待任务'));
     $('#downloadSelection').title = active ? `${active.label} · ${localizeUiText(selectionText)}` : localizeUiText(selectionText);
     setText('#downloadPercent', `${clamp(percent,0,100)}%`); $('#downloadProgress').style.width = `${clamp(percent,0,100)}%`;
     $('#browseFolder').disabled = false; $('#openDownloadFolder').disabled = !folder;
@@ -1055,7 +1111,7 @@
     setText('#pauseDownload', paused ? '继续' : '暂停'); setText('#startDownload', processing && !precise ? '正在后处理' : busy || queueRunning ? '下载进行中' : '开始下载');
     setText('#downloadPlanStart', busy || queueRunning ? '下载进行中' : '开始下载');
     setText('#taskSummarySelection', selectionText);
-    setText('#taskSummaryStatus', status || (busy ? '正在处理任务' : '等待任务'));
+    setText('#taskSummaryStatus', statusSummary || (busy ? '正在处理任务' : '等待任务'));
     setText('#taskSummaryPercent', `${clamp(percent,0,100)}%`);
     const summaryBar = $('#taskSummaryProgress'); if (summaryBar) summaryBar.style.width = `${clamp(percent,0,100)}%`;
     // 查询测站始终保持主按钮样式，选中测站和下载进度不改变颜色。
@@ -1088,7 +1144,7 @@
     if (status && status !== lastStatus && (!queryCompletion || queryReady)) {
       lastStatus = status;
       const warning = /失败|错误|尚未|没有|请先|warning|error/i.test(status);
-      const download = current.downloading || current.preciseBusy || /下载/.test(status);
+      const download = current.downloading || current.preciseDownloading || /下载/.test(status);
       if (status !== current.querySummary) {
         addInfo(status, download ? 'download' : warning ? 'warning' : 'notice', { busy:current.downloading || current.preciseDownloading });
       }
@@ -1603,6 +1659,11 @@ async function loadMap() {
   const splitChoiceValues = value => String(value || '').split(/[;,]+/).map(item=>item.trim()).filter(Boolean);
   const choiceSystemLabels = {GPS:'GPS',G:'GPS',GLO:'GLONASS',R:'GLONASS',GAL:'Galileo',E:'Galileo',BDS:'BeiDou',C:'BeiDou',QZS:'QZSS',J:'QZSS',SBS:'SBAS',S:'SBAS',IRN:'NavIC',I:'NavIC'};
   const gimProviderLabels = {IGS:'IGS / 国际 GNSS 服务',CODE:'CODE / 欧洲定轨中心',ESA:'ESA / 欧洲航天局',JPL:'JPL / 喷气推进实验室',UPC:'UPC / 加泰罗尼亚理工大学',CAS:'CAS / 中国科学院',EMR:'EMR / 加拿大自然资源部',WHU:'WHU / 武汉大学'};
+  const frequencyPairLabels = {
+    'GPS:DUAL_L1_L2': 'GPS · L1 + L2 (code + phase)',
+    'GLO:DUAL_G1_G2': 'GLONASS · G1 + G2 (code + phase)',
+    'GAL:DUAL_E1_E5A': 'Galileo · E1 + E5a (code + phase)'
+  };
   const signalGroupOrder = ['G','R','E','C','J','S','I','?'];
   const signalGroupNames = {G:'GPS',R:'GLONASS',E:'Galileo',C:'BeiDou',J:'QZSS',S:'SBAS',I:'NavIC','?':'其他'};
   const choiceKindNames = {systems:'卫星系统',receivers:'接收机型号',antennas:'天线型号',signals:'观测码 / 频点',gimProviders:'GIM 机构',gimProductGrades:'GIM 产品等级'};
@@ -1643,6 +1704,7 @@ async function loadMap() {
       return `${provider} · ${localizeUiText(labels[grade]||grade)}`;
     }
     if (kind === 'signals') {
+      if (frequencyPairLabels[value]) return frequencyPairLabels[value];
       const parts=String(value).split(':');
       return parts.length===2 ? `${choiceSystemLabels[parts[0]] || parts[0]} · ${parts[1]}` : value;
     }
@@ -1685,7 +1747,8 @@ async function loadMap() {
     const trigger=activeChoiceTrigger(),root=$('#advancedChoiceList');if(!trigger||!root)return;
     const kind=trigger.dataset.choiceKind,input=$(`#${state.activeChoiceInput}`),selected=new Set(splitChoiceValues(input?.value));
     const needle=state.choiceNeedle.trim().toLocaleLowerCase();
-    const all=Array.isArray(state.advancedChoices[kind])?state.advancedChoices[kind]:[];
+    const available=Array.isArray(state.advancedChoices[kind])?state.advancedChoices[kind]:[];
+    const all=kind==='signals'?[...new Set([...Object.keys(frequencyPairLabels),...available,...selected])]:available;
     const groups=$('#advancedChoiceGroups');
     let ordered=all;
     if(kind==='gimProductGrades'){
@@ -2010,7 +2073,7 @@ async function loadMap() {
     $('#addPrecisePlan').addEventListener('click',()=>post('add-download-plan',{mode:'precise'}));
     $('#precisePreviousRows').addEventListener('click',()=>{state.precisePage=Math.max(0,state.precisePage-1);renderPreciseRows();});
     $('#preciseNextRows').addEventListener('click',()=>{state.precisePage++;renderPreciseRows();});
-    $('#preciseRows').addEventListener('click',event=>{const row=event.target.closest('[data-product-index]');if(!row)return;const product=state.preciseRows[Number(row.dataset.productIndex)];if(!product)return;showProductDetail(product);if(event.target.closest('[data-product-check]'))post('select-product',{product:product.id,checked:!product.selected});});
+    $('#preciseRows').addEventListener('click',event=>{const row=event.target.closest('[data-product-index]');if(!row)return;const product=state.preciseRows[Number(row.dataset.productIndex)];if(!product)return;showProductDetail(product);if(!product.missingRequired && event.target.closest('[data-product-check]'))post('select-product',{product:product.id,checked:!product.selected});});
 
     $$('.info-tabs button').forEach(button=>button.addEventListener('click',()=>{state.infoFilter=button.dataset.infoFilter;$$('.info-tabs button').forEach(item=>item.classList.toggle('active',item===button));renderInfo();}));
     $('#infoScroll').addEventListener('click',event=>{const button=event.target.closest('[data-info-dismiss]');if(!button)return;const id=Number(button.dataset.infoDismiss);state.info=state.info.filter(item=>item.id!==id);renderInfo();});
@@ -2063,6 +2126,16 @@ async function loadMap() {
   const uiPrefsKey = 'igs.ui.prefs';
   const uiLanguageKey = window.markUiLanguageKey || 'igs.ui.language.portable';
   const enDict = {
+    '部分 CLK 引用未锁定历史版本的 ANTEX':'Some CLK references do not identify a historical ANTEX revision',
+    '选用同模型官方当前文件，其内容可能随更新改变。':'The official current file for the same model is used; its contents may change over time.',
+    '部分 CLK 引用未锁定历史版本的 ANTEX；选用同模型官方当前文件，其内容可能随更新改变。':'Some CLK references do not identify a historical ANTEX revision. The official current file for the same model is used; its contents may change over time.',
+    '当前日期范围内未找到符合方案条件的本地记录；此行仅提示缺项，不能下载。':'No matching local records for this preset and date range. This missing requirement cannot be downloaded.',
+    "所选系统分别满足":"Each selected system independently",
+    "已应用参考框架预设：官方核心站、GPS、30S、RINEX 3/4、日期覆盖至少95%；不固定测站数量。":"Reference-frame preset applied: official core stations, GPS, 30S, RINEX 3/4 and at least 95% date coverage; no fixed station count.",
+    "已应用 GIM 相关测站预设：IGS + MGEX、GPS、30S、RINEX 3/4、日期覆盖至少95%；均匀选择250站，间距至少10 km，每天至少245站可用。":"GIM station preset applied: IGS + MGEX, GPS, 30S, RINEX 3/4 and at least 95% date coverage; select 250 evenly distributed stations, at least 10 km apart, with at least 245 available every day.",
+    "已应用 GIM 独立评估预设：GPS、30S、RINEX 3/4、日期覆盖至少90%；排除所选机构在整个区间使用过的测站，均匀选择50站，间距至少50 km，每天至少35站可用。建议评估区间为三至四年。":"Independent GIM evaluation preset applied: GPS, 30S, RINEX 3/4 and at least 90% date coverage; exclude stations used by the selected providers anywhere in the interval. Select 50 evenly distributed stations, at least 50 km apart, with at least 35 available every day. A three- to four-year evaluation period is recommended.",
+    "已应用北斗 POD 预设：IGS + MGEX、30S、RINEX 3/4、BDS B1I/B3I双频伪距和相位；北斗每日完整率至少90%、平均 RMS 多路径不超过30 cm，合格日期覆盖100%；均匀选择60站，间距至少300 km。建议先使用7至10天区间。":"BeiDou POD preset applied: IGS + MGEX, 30S, RINEX 3/4 and BDS B1I/B3I dual-frequency code and phase (C2I/L2I/C6I/L6I); at least 90% daily BDS observation completeness, mean RMS multipath at most 30 cm and 100% qualified-date coverage. Select 60 evenly distributed stations at least 300 km apart. Start with a 7- to 10-day interval.",
+    "已应用区域 RTK 候选预设：全部本地数据源、30S、日期覆盖至少90%；默认不限版本和系统。请选择区域；默认30站、间距至少20 km、最大连边75 km，每天至少80%的目标站数可用。系统元数据缺失不代表满足指定系统要求。":"Regional RTK candidate preset applied: all local sources, 30S and at least 90% date coverage; no version or constellation restriction by default. Choose a region. Defaults: 30 stations, at least 20 km apart, connected by links at most 75 km, with at least 80% of the target count available every day. Missing system metadata do not establish that a constellation requirement is met.",
     '知识库数据截至':'Knowledge-base data through', '显示全部':'Show all', 
     'SP3 索引':'SP3 index', 'CLK 索引':'CLK index', 'SP3 / CLK 索引':'SP3 / CLK index', 'GIM 产品索引':'GIM product index',
     "软件版本": "Application version",
@@ -2215,7 +2288,7 @@ async function loadMap() {
     'UPD PPP-AR｜相位偏差整数固定':'UPD PPP-AR | phase-bias ambiguity fixing',
     'OSB PPP-AR｜观测偏差整数固定':'OSB PPP-AR | observable-bias ambiguity fixing',
     'PPP-RTK｜网络高精度定位基础文件':'PPP-RTK | core files for network positioning',
-    '通用 PPP 智能优选｜自动找完整产品':'Automatic PPP | find a complete product bundle',
+    '通用 PPP 智能优选｜自动找完整产品':'PPP: Automatic Product Matching | find a complete product bundle',
     '产品类型':'Product type','产品等级':'Product level','生产机构 / 分析中心':'Analysis center',
     '日解':'Daily solution','周解':'Weekly solution','累计解':'Cumulative solution','多日解':'Multi-day solution','其他解':'Other solution',
     '周期':'Period','解算周期':'Solution period','全部解算周期':'All solution periods','发布等级':'Publication level','等级 / 周期':'Level / period',
@@ -2228,7 +2301,7 @@ async function loadMap() {
     '选择日期与筛选条件后查询':'Query after choosing dates and filters','全部等级':'All levels','不限制':'Any',
     '自然色':'Natural','舒适密度':'Comfortable','紧凑密度':'Compact','列设置':'Columns','站号 A–Z':'Station A–Z'
 ,'普通查询（按当前条件）':'Standard query (current filters)','IGS/ITRF 参考框架（按日期自动选择）':'IGS/ITRF reference frame (date-aware)',
-    'GIM 电离层产品相关测站':'GIM ionosphere stations','GIM 评估（全球均匀·每日可用约束）':'GIM evaluation (even spread · daily availability)','多系统 POD（全球均匀 60 站）':'Multi-GNSS POD (60 global stations)',
+    'GIM 电离层产品相关测站':'GIM ionosphere stations','GIM 评估（全球均匀·每日可用约束）':'GIM evaluation (even spread · daily availability)','北斗 POD（全球均匀 60 站）':'BeiDou POD (60 global stations)',
     'Network RTK 候选网（区域组网）':'Network RTK candidates','例如 ZIM2、MGEX、CHN、POLARX5...':'e.g. ZIM2, MGEX, CHN, POLARX5…',
     '搜索国家缩写，例如 CHN、USA、DEU':'Search country code, e.g. CHN, USA, DEU',
     '搜索产品 ID、文件名或分析中心':'Search product ID, file name or center',
@@ -2296,7 +2369,8 @@ async function loadMap() {
     '正在读取数据源…':'Reading data sources…','正在读取本地知识库':'Reading local knowledge base','等待本地索引…':'Waiting for local index…','运行信息将在这里显示':'Runtime information appears here','选择测站后开始下载':'Select stations to start downloading','尚未选择内容':'Nothing selected','尚未选择测站':'No station selected','尚未选择产品':'No product selected',
     '恢复全球视图':'Reset global view','缩小':'Zoom out','放大':'Zoom in','双击恢复':'Double-click to reset','最高':'Maximum','全屏地图':'Fullscreen map','地图框选':'Box select on map','查询后显示满足条件的测站':'Stations matching the query appear here',
     '按日期自动选择':'Date-aware automatic selection','日期范围':'Date range','起始日期':'Start date','终止日期':'End date','应用并刷新结果':'Apply and refresh results','清除全部条件':'Clear all conditions','正在按空间天气条件刷新':'Refreshing by space-weather conditions',
-    '最终':'Final','快速':'Rapid','超快速':'Ultra-rapid','近实时':'Near real-time','实时流归档':'Real-time stream archive','预报':'Predicted','每日':'Daily','每周':'Weekly','静态':'Static','其他':'Other','其他机构':'Other providers',
+    'SP3 轨道':'SP3 orbit','CLK 钟差':'CLK clock','DCB 差分码偏差':'DCB differential code bias','ORBEX 姿态':'ORBEX attitude','IONEX 电离层':'IONEX ionosphere','OSB 观测量偏差':'OSB observable-specific bias','UPD 未校准相位延迟':'UPD uncalibrated phase delay',
+    '最终':'Final','快速':'Rapid','超快速':'Ultra-rapid','近实时':'Near real-time','实时流归档':'Real-time stream archive','实时流归档（非实时服务）':'Real-time stream archive (not a live service)','预报':'Predicted','每日':'Daily','每周':'Weekly','静态':'Static','其他':'Other','其他机构':'Other providers',
     '观测码':'Observation code','频点':'Frequency','卫星系统':'Satellite system','接收机型号':'Receiver model','天线型号':'Antenna model','使用测站':'Stations used','参考框架':'Reference frame','全球范围':'Global scope','区域组网':'Regional network',
     '中国台湾':'Taiwan, China','武汉大学':'Wuhan University','中国科学院':'Chinese Academy of Sciences','上海天文台':'Shanghai Astronomical Observatory','日本宇宙航空研究开发机构':'Japan Aerospace Exploration Agency','斯克里普斯海洋研究所':'Scripps Institution of Oceanography',
     '数据来自本地空间天气索引':'Data from the local space-weather index','适合跨多个框架的查询':'Suitable for ranges spanning multiple frames','使用本地可用性索引':'Uses the local availability index','日质量知识库':'daily-quality knowledge base','使用所选机构每日':'Uses each selected provider’s daily','中记录的测站并集进行筛选':'recorded station union for filtering','日期范围仍会与该框架有效期进行提示':'the date range is checked against the frame validity period','按大洲浏览并可同时选择多个国家':'Browse by continent and select multiple countries','所有方案都会出现在上方':'All plans appear in the list above','启用某项后':'When enabled','暂时仅支持':'Currently supports only','再计算测站范围完整性':'then calculate station-range completeness',
@@ -2306,7 +2380,15 @@ async function loadMap() {
   // Runtime strings and map metadata are produced outside the static HTML,
   // so keep their complete phrases here.  Long phrases are intentionally
   // listed before short terms to avoid mixed Chinese/English output.
+  Object.assign(enDict, {"PPP-RTK 自动配套": "PPP-RTK: Automatic Product Matching", "PPP 自动配套": "PPP: Automatic Product Matching", "PRIDE PPP-AR(OSB)": "PRIDE PPP-AR(OSB)", "GREAT PPP-AR(UPD)": "GREAT PPP-AR(UPD)"});
+  Object.assign(enDict, {"PPP-RTK｜参考网离线准备": "PPP-RTK | reference-network preparation", "PPP-RTK 自动配套：自动选择兼容的同机构同系列 SP3、30S CLK 和相位 OSB；优先可核实的核心覆盖，再比较整套覆盖、Final 和 Rapid。ANTEX 按 CLK 声明选择，配套 ERP、IGS 每日坐标解和 RINEX 3 BRDC；有记录时附带同系列 ORBEX。区域改正由处理软件生成。": "PPP-RTK: Automatic Product Matching: select compatible SP3, 30-second CLK and phase OSB from one producer series. Prefer verified core coverage, then complete bundles, Final and Rapid. ANTEX follows the CLK declaration, with ERP, IGS daily coordinates and RINEX 3 BRDC; include matching ORBEX when indexed. The processing software generates regional corrections.", "已应用 PPP-RTK 自动配套方案，正在比较兼容产品组合…": "PPP-RTK: Automatic Product Matching preset applied; comparing compatible product combinations…"});
   Object.assign(enDict, {
+    '声明文件未收录精确下载路线。':'No exact download route is indexed for the declared file.',
+    'UPD 有问题：DCB 日期与 UPD 日期不同；默认不选取。':'Flagged UPD: DCB and UPD dates differ; excluded by default.',
+    'UPD 有问题：DCB 日期与 UPD 日期不同':'Flagged UPD: DCB and UPD dates differ',
+    '默认不选取。':'Excluded by default.',
+    'GREAT PPP-AR(UPD)：CODE MGX Final 05M SP3＋30S CLK；2022—2023 年用 CAS MGX Rapid BSX DCB，2024 年起用 CAS OPS Rapid BIA DCB；固定 IGS20_STANDARD_2247，配套 IGS RINEX 3 BRDC；选择全部 UPD 类别，问题记录默认排除。':'GREAT PPP-AR(UPD): CODE MGX Final 05M SP3 and 30S CLK; CAS MGX Rapid BSX DCB for 2022–2023 and CAS OPS Rapid BIA DCB from 2024; fixed IGS20_STANDARD_2247 and IGS RINEX 3 BRDC. Select all UPD categories; flagged records are excluded by default.',
+    '已应用 GREAT PPP-AR(UPD) 方案，正在查询产品…':'GREAT PPP-AR(UPD) preset applied; querying products…',
     '本地记录': 'Local inventory',
     '本地记录覆盖率': 'Local inventory coverage',
     '未配置 UPD 在线下载地址；覆盖率表示本地存档记录。': 'UPD download URLs are not configured. Coverage reflects the supplied local archive.',
@@ -2452,7 +2534,6 @@ async function loadMap() {
   "已保留你手动调整的站网选择；本次全选/取消全选已跳过。": "Your manually adjusted network selection was retained; select-all/deselect-all was skipped.",
   "已应用 GIM/TEC 全球电离层建模预设：IGS + MGEX、全球范围、30S、GPS、单站完整性不限制、每日覆盖至少245个测站，目标 250 个测站；最小站间距和最大相邻距离不限制，RINEX、接收机、天线和频点不限制。点击“开始查询”后将自动按全球均匀规则选择最多250个测站。": "GIM/TEC global ionosphere modelling preset applied: IGS + MGEX, global scope, 30S, GPS, unrestricted station completeness, at least 245 available stations daily and a target of 250 stations. Spacing, neighbor distance, RINEX, receiver, antenna and frequencies are unrestricted. Click Query stations to select up to 250 stations with an even global distribution.",
   "已应用 GIM 评估预设：选择全部本地可用观测数据源，GPS、30S、RINEX 3/4，单站日期范围完整率至少90%，选站集合每日已确认可用站不少于35；排除八个机构在当前日期范围内用于 GIM 建模的测站，按至少50 km间距全球均匀选择固定50站。点击“高级测站筛选”可查看或调整机构范围。": "GIM evaluation preset applied: all locally available observation sources, GPS, 30S, RINEX 3/4, at least 90% station completeness across the date range and at least 35 confirmed available stations daily. Exclude stations used by the eight GIM providers during this date range and select a fixed global set of 50 stations with spacing of at least 50 km. Open Advanced station filters to inspect or change the providers.",
-  "已应用多系统 POD 预设：IGS + MGEX、全球范围、30S、RINEX 3/4、GPS + GLONASS + Galileo + BDS、每日观测完整率至少95%，目标60站；查询完成后将自动按全球均匀规则选站。30S文件可在POD处理中降采样到300S。": "Multi-GNSS POD preset applied: IGS + MGEX, global scope, 30S, RINEX 3/4, GPS + GLONASS + Galileo + BDS, at least 95% observation completeness on every query date and a target of 60 stations. Stations will be selected with an even global distribution after the query. The 30S files can be downsampled to 300S during POD processing.",
   "已应用 Network RTK 候选网预设：全部本地数据源、30S、RINEX 3/4、GPS + GLONASS，最大邻站距离75 km。请先用国家、经纬度或地图框选限定服务区域，并填写目标数量；查询后点击“均匀选站”。本预设使用30秒历史观测文件筛选候选测站，不代表已验证NTRIP、RTCM、实时在线率、数据延迟或站址环境。": "Network RTK candidate preset applied: all local sources, 30S, RINEX 3/4, GPS + GLONASS and a maximum neighbor distance of 75 km. Specify the service area using countries, coordinates or map selection and enter a target count; click Even spread after querying. This preset selects candidates from historical 30-second observation files. NTRIP, RTCM, real-time availability, latency and site conditions have not been verified.",
   "已应用 IGS/ITRF 参考框架方案：按日期自动选择 IGS14、IGb14、IGS20、IGb20 或 IGc20，官方核心测站、30S、RINEX 3；点击“开始查询”查看可用观测日期。": "IGS/ITRF reference-frame preset applied: automatically choose IGS14, IGb14, IGS20, IGb20 or IGc20 by date; official core stations, 30S and RINEX 3. Click Query stations to view available observation dates.",
   "正在读取起止日期内的本地知识库，并按日期、完整性与测站条件计算结果。超出知识库的日期沿用最后已知信息，下载时在线确认。": "Reading the local index for the selected date range and applying date, completeness and station filters. Dates beyond the index use the last known information; files are verified online when downloaded.",
@@ -2465,17 +2546,16 @@ async function loadMap() {
   "精密产品查询已取消。": "Precise product query cancelled.",
   "快速方案后台查询未返回结果。": "The background preset query returned no results.",
   "IGS 每日 SINEX、CODE Final GIM、VMF1/VMF3 OP 四时次、IGS 每日 RINEX 3 BRDC；缺口会按日期区间显示在运行窗口。": "IGS daily SINEX, CODE Final GIM, VMF1/VMF3 OP at four epochs and IGS daily RINEX 3 BRDC; gaps are shown by date range in the activity log.",
-  "已应用 PRIDE PPP-AR 方案；正在核对 WUM RAPID 与辅助产品…": "PRIDE PPP-AR preset applied. Checking WUM RAPID and supporting products…",
-  "标准 PPP：IGS Final SP3 + CLK + ERP/EOP + ANTEX；适合浮点 PPP，Bias/ORBEX 等可按需另行选择。": "Standard PPP: IGS Final SP3 + CLK + ERP/EOP + ANTEX; suitable for float PPP. Select Bias/ORBEX and other products separately as needed.",
+  "已应用 PRIDE PPP-AR(OSB) 方案；正在核对 WUM RAPID 与辅助产品…": "PRIDE PPP-AR(OSB) preset applied. Checking WUM RAPID and supporting products…",
+  "标准 PPP：IGS Final OPS SP3 + 30S CLK + ERP/EOP + IGS ANTEX；配套 IGS 每日 SINEX CRD/SOL、CODE Final GIM、VMF1/VMF3 OP 四时次和 IGS RINEX 3 BRDC。用于浮点解，缺项按日期报告。": "Standard PPP: IGS Final OPS SP3 + 30-second CLK + ERP/EOP + IGS ANTEX, with IGS daily SINEX CRD/SOL, CODE Final GIM, four daily VMF1/VMF3 OP epochs and IGS RINEX 3 BRDC. For float solutions; missing products are reported by date.",
   "已应用标准 IGS Final PPP 方案；正在查询 IGS Final SP3 起始产品…": "Standard IGS Final PPP preset applied. Querying the initial IGS Final SP3 products…",
-  "UPD PPP-AR 兼容模式：SP3 + CLK + 对应分析中心 UPD + ERP + ANTEX；UPD 不能与其他机构的钟差/偏差混用。": "UPD PPP-AR compatibility mode: SP3 + CLK + matching analysis-center UPD + ERP + ANTEX. UPD must not be mixed with clock or bias products from other providers.",
-  "已应用 UPD PPP-AR 兼容方案；请按分析中心检查 UPD 与轨道/钟差是否成套。": "UPD PPP-AR compatibility preset applied. Check that UPD, orbit and clock products form a matching bundle from the same analysis center.",
   "SP3、CLK 与 OSB 必须属于同一分析中心和产品线，不跨机构拼接。": "SP3, CLK and OSB must belong to the same analysis center and product line; products from different providers must not be combined.",
+  "OSB PPP-AR：同机构同产品线 SP3 + 30S CLK + 相位 OSB + ERP + ORBEX + IGS ANTEX；配套 IGS 每日 SINEX CRD/SOL、CODE Final GIM、VMF1/VMF3 OP 四时次和 IGS RINEX 3 BRDC。优先完整覆盖，再选 Final；码偏差不代替相位偏差。": "OSB PPP-AR: matching SP3 + 30-second CLK + phase OSB + ERP + ORBEX + IGS ANTEX, with IGS daily SINEX CRD/SOL, CODE Final GIM, four daily VMF1/VMF3 OP epochs and IGS RINEX 3 BRDC. Prefer complete coverage, then Final. Code-only biases do not replace phase biases.",
   "已应用 OSB PPP-AR 同机构方案，正在核对产品族。": "Same-center OSB PPP-AR preset applied. Checking product families.",
-  "PPP-RTK / 网络 RTK 通用精密产品：SP3 + CLK + OSB + ERP + ANTEX；区域大气改正和实时播发不属于本地精密文件库，需由用户的服务端另行提供。": "PPP-RTK / network RTK core precise products: SP3 + CLK + OSB + ERP + ANTEX. Regional atmospheric corrections and real-time broadcasting are outside the local precise-file index and must be supplied by your server.",
+  "PPP-RTK / 网络 RTK 离线准备：同机构同产品线 SP3 + 30S CLK + 相位 OSB + ERP + ORBEX + IGS ANTEX；配套 IGS 每日 SINEX CRD/SOL、CODE Final GIM、VMF1/VMF3 OP 四时次和 IGS RINEX 3 BRDC。优先完整覆盖，再选 Rapid、Final；实时 SSR 和区域大气改正需另行提供。": "PPP-RTK / network RTK offline preparation: matching SP3 + 30-second CLK + phase OSB + ERP + ORBEX + IGS ANTEX, with IGS daily SINEX CRD/SOL, CODE Final GIM, four daily VMF1/VMF3 OP epochs and IGS RINEX 3 BRDC. Prefer complete coverage, then Rapid and Final. Supply real-time SSR and regional atmospheric corrections separately.",
   "已应用 PPP-RTK / 网络 RTK 通用精密产品方案。": "PPP-RTK / network RTK core precise-product preset applied.",
-  "通用 PPP 智能优选：自动选择一套完整的 SP3 轨道、CLK 钟差、ERP 和 ANTEX；轨道与钟差保持同机构同产品线，优先完整覆盖，再选 Final 和高采样率钟差。": "Automatic PPP: select a complete SP3 orbit, CLK clock, ERP and ANTEX bundle. Orbit and clock products stay within the same analysis center and product line. Prefer complete coverage, then Final products and high-rate clocks.",
-  "已应用通用 PPP 智能优选方案，正在比较分析中心与产品族。": "Automatic PPP preset applied. Comparing analysis centers and product families.",
+  "PPP 自动配套：自动比较同机构同产品线 SP3 + 30S CLK + ERP + IGS ANTEX；配套 IGS 每日 SINEX CRD/SOL、CODE Final GIM、VMF1/VMF3 OP 四时次和 IGS RINEX 3 BRDC。优先整套覆盖天数，再选元数据可核实、Final 和 Rapid；用于浮点解。": "PPP: Automatic Product Matching: compare matching SP3 + 30-second CLK + ERP + IGS ANTEX bundles, with IGS daily SINEX CRD/SOL, CODE Final GIM, four daily VMF1/VMF3 OP epochs and IGS RINEX 3 BRDC. Prefer complete bundle coverage, then verified metadata, Final and Rapid. For float solutions.",
+  "已应用PPP 自动配套方案，正在比较分析中心与产品族。": "PPP: Automatic Product Matching preset applied. Comparing analysis centers and product families.",
   "方案兼容性元数据待核对，不能直接加入下载计划。": "Preset compatibility metadata needs verification before items can be added to the download plan.",
   "下载计划超过 25 万个产品日期；请缩短范围或分批添加。": "The download plan exceeds 250,000 product dates. Shorten the range or add items in batches.",
   "内存不足，未能加入下载计划；请缩短日期范围或减少产品。": "Insufficient memory to add items to the download plan. Shorten the date range or select fewer products.",
@@ -2570,6 +2650,8 @@ async function loadMap() {
 });
   function formatRuntimeEnglish(value) {
     const raw = String(value).trim().replace(/\\u2026/g, '…');
+    const productName = /^([A-Z0-9_]+) (SP3 精密轨道|CLK 精密钟差)$/.exec(raw);
+    if (productName) return `${productName[1]} ${productName[2] === 'SP3 精密轨道' ? 'SP3 precise orbit' : 'CLK precise clock'}`;
     const complete = window.GnssRuntimeLog.translateMessage(raw, localizeUiText);
     if (complete !== null) return complete;
     const fileResult = /^(\[\d+\/\d+\]\s*[\s\S]+?\s+—\s+)([\s\S]+)$/.exec(raw);
@@ -2870,7 +2952,7 @@ async function loadMap() {
       if(row)setHtml($('#stationDetailBody'), stationDetailMarkup(row));
       renderCoverage($('#stationDateCoverage'),state.stationDetailData.coverage);
     }
-    if(state.productCoverage)renderClkAntex(state.productCoverage.antex);
+    if(state.productCoverage){renderClkAntex(state.productCoverage.antex);renderPreciseFiles(state.productCoverage.files);renderUpdRecords(state.productCoverage.updRecords);}
     if(state.productCoverage) renderCoverage($('#productDateCoverage'),state.productCoverage.coverage);
     syncSortHeader('#sortStationCompleteness',state.sortColumn==='completeness'?(state.ascending?'asc':'desc'):null);
     syncSortHeader('#sortPreciseCompleteness',state.preciseSortDirection);

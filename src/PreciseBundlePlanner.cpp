@@ -240,12 +240,12 @@ bool BundleProductCompatibleWithAnchor(
         && ConstellationSubsetOf(anchor.constellation, candidate.constellation);
 }
 
-bool IsWumSupplementType(const PreciseBundleProductType type) {
+bool IsCommonSupplementType(const PreciseBundleProductType type) {
     return type >= PreciseBundleProductType::SinexCrd
         && type <= PreciseBundleProductType::Brdc;
 }
 
-bool MatchesWumSupplement(const PreciseBundleProduct& product) {
+bool MatchesCommonSupplement(const PreciseBundleProduct& product) {
     const auto type = product.type;
     const auto center = NormalizeBundleToken(product.center);
     const auto series = NormalizeBundleToken(product.series);
@@ -282,7 +282,7 @@ std::optional<std::set<char>> RequestedConstellationSet(
     return ParseConstellationSet(raw);
 }
 
-int LatencyPreference(const std::string& latency) {
+int LatencyPreference(const std::string& latency, const PreciseBundlePlan) {
     const auto normalized = NormalizeBundleToken(latency);
     if (normalized == "FINAL") return 0;
     if (normalized == "RAPID") return 1;
@@ -372,7 +372,29 @@ bool PreferCandidate(const PreciseBundleProduct& candidate,
     return candidate.fileName < selected.fileName;
 }
 
+bool IsRtkCoreType(const PreciseBundleProductType type) {
+    return type == PreciseBundleProductType::Sp3
+        || type == PreciseBundleProductType::Clk
+        || type == PreciseBundleProductType::Osb;
+}
+
+// Centre-specific ERP must belong to the selected orbit/clock solution.
+// Explicit global EOP streams can be used as a lower-priority supplement.
+int RtkErpPreference(const PreciseBundleProduct& product,
+                     const PreciseBundleCompatibilityKey& anchor) {
+    if (NormalizeBundleToken(product.center) == anchor.center
+        && NormalizeBundleToken(product.series) == anchor.series
+        && NormalizeBundleToken(product.productLine) == anchor.productLine) return 0;
+    if (NormalizeBundleToken(product.center) == "IERS"
+        || NormalizeBundleToken(product.series).starts_with("IERS")
+        || NormalizeBundleToken(product.productLine) == "EOP") return 1;
+    return 2;
+}
+
 bool MatchesRequest(const PreciseBundleProduct& p, const PreciseBundleRequest& req) {
+    if (req.plan == PreciseBundlePlan::NetworkRtkPppRtk && IsRtkCoreType(p.type)
+        && (p.center.empty() || p.series.empty() || p.productLine.empty()
+            || p.latency.empty())) return false;
     if (req.plan == PreciseBundlePlan::WumPridePppAr
         && p.type == PreciseBundleProductType::Erp) {
         return NormalizeBundleToken(p.center) == "WUM"
@@ -380,9 +402,24 @@ bool MatchesRequest(const PreciseBundleProduct& p, const PreciseBundleRequest& r
             && NormalizeBundleToken(p.productLine) == "MGX"
             && NormalizeBundleToken(p.latency) == "RAPID";
     }
-    if (req.plan == PreciseBundlePlan::WumPridePppAr
-        && IsWumSupplementType(p.type)) {
-        return MatchesWumSupplement(p);
+    if (IsCommonSupplementType(p.type)) {
+        return MatchesCommonSupplement(p);
+    }
+    // Phase-bias workflows require a declared phase OSB. A code-only bias
+    // catalogue cannot establish the integer datum for ambiguity fixing.
+    if ((req.plan == PreciseBundlePlan::OsbPppAr
+            || req.plan == PreciseBundlePlan::NetworkRtkPppRtk)
+        && p.type == PreciseBundleProductType::Osb
+        && NormalizeBundleToken(p.biasConvention).find("PHASE") == std::string::npos) {
+        return false;
+    }
+    // A service name alone does not identify the producer of a UPD solution.
+    // Keep unverified UPD rows out of a strict, supposedly matched bundle.
+    if (req.plan == PreciseBundlePlan::UpdPppAr && req.strictMatching
+        && p.type == PreciseBundleProductType::Upd
+        && (p.center.empty() || p.series.empty() || p.productLine.empty()
+            || p.latency.empty() || p.referenceFrequency.empty())) {
+        return false;
     }
     // ANTEX is a calibration catalogue and ERP/EOP is a global
     // Earth-orientation product; neither is an analysis-centre orbit/clock/
@@ -543,8 +580,7 @@ bool HasUnknownCriticalMetadata(
     const PreciseBundleProductType type,
     const PreciseBundleCompatibilityKey& key,
     const PreciseBundleRequest& request) {
-    if (request.plan == PreciseBundlePlan::WumPridePppAr
-        && IsWumSupplementType(type)) return false;
+    if (IsCommonSupplementType(type)) return false;
     if (type != PreciseBundleProductType::Antex
         && type != PreciseBundleProductType::Erp
         && (key.center.empty() || key.series.empty())) return true;
@@ -623,15 +659,8 @@ PreciseBundleCompatibilityKey MakeBundleCompatibilityKey(
     key.biasConvention = NormalizeBundleToken(p.biasConvention);
     key.referenceFrame = NormalizeBundleToken(p.referenceFrame);
     key.apcModel = NormalizeBundleToken(p.apcModel);
-    // iGMAS UPD rows use the directory variant (UC/IF) in `variant`; that is
-    // not an analysis-centre product series and cannot be compared with an
-    // SP3 prefix.  Treat these dimensions as unknown/wildcards while keeping
-    // the UPD class, frequency and constellation available for matching.
-    if (p.type == PreciseBundleProductType::Upd) {
-        key.series.clear();
-        key.productLine.clear();
-        key.latency.clear();
-    }
+    // UPD adapters leave unidentified producer fields empty. Preserve any
+    // verified producer metadata so strict matching can reject mixed streams.
     // ERP/EOP is paired by its validity interval and latency/standard, not by
     // the SP3 analysis-centre prefix.  Keep latency for Final/Rapid matching
     // but treat IERS (or another EOP producer) as a wildcard producer family.
@@ -657,44 +686,146 @@ bool BundleProductsCompatible(const PreciseBundleCompatibilityKey& a,
         && ConstellationsEqual(a.constellation, b.constellation);
 }
 
+PreciseBundleRequest MakeDefaultPreciseBundleRequest(
+    const PreciseBundlePlan plan, const QueryDate& start, const QueryDate& end) {
+    PreciseBundleRequest request;
+    request.startDate = start;
+    request.endDate = end;
+    request.plan = plan;
+    request.strictMatching = true;
+    request.clockInterval = "30S";
+    if (plan == PreciseBundlePlan::WumPridePppAr) {
+        request.latency = PreciseBundleLatency::Rapid;
+        request.center = "WUM";
+        request.series = "WUM0MGXRAP";
+        request.productLine = "MGX";
+    } else if (plan == PreciseBundlePlan::UpdPppAr) {
+        request.latency = PreciseBundleLatency::Final;
+        request.center = "CODE";
+        request.series = "COD0MGXFIN";
+        request.productLine = "MGX";
+        request.orbitInterval = "05M";
+    } else if (plan == PreciseBundlePlan::StandardPpp) {
+        request.latency = PreciseBundleLatency::Final;
+        request.center = "IGS";
+        request.productLine = "OPS";
+    } else {
+        request.latency = PreciseBundleLatency::Automatic;
+    }
+    return request;
+}
+
 std::vector<PreciseBundleProductType> RequiredBundleProductTypes(
     const PreciseBundlePlan plan) {
+    using Type = PreciseBundleProductType;
+    std::vector<Type> required{Type::Sp3, Type::Clk};
     switch (plan) {
     case PreciseBundlePlan::WumPridePppAr:
-        return {PreciseBundleProductType::Sp3, PreciseBundleProductType::Clk,
-                PreciseBundleProductType::Osb, PreciseBundleProductType::Erp,
-                PreciseBundleProductType::Att, PreciseBundleProductType::Antex,
-                PreciseBundleProductType::SinexCrd,
-                PreciseBundleProductType::SinexSol,
-                PreciseBundleProductType::Gim,
-                PreciseBundleProductType::Vmf1H00,
-                PreciseBundleProductType::Vmf1H06,
-                PreciseBundleProductType::Vmf1H12,
-                PreciseBundleProductType::Vmf1H18,
-                PreciseBundleProductType::Vmf3H00,
-                PreciseBundleProductType::Vmf3H06,
-                PreciseBundleProductType::Vmf3H12,
-                PreciseBundleProductType::Vmf3H18,
-                PreciseBundleProductType::Brdc};
+    case PreciseBundlePlan::OsbPppAr:
+        required.insert(required.end(), {Type::Osb, Type::Erp,
+            Type::Att, Type::Antex});
+        break;
+    case PreciseBundlePlan::NetworkRtkPppRtk:
+        return {Type::Sp3,Type::Clk,Type::Osb,Type::Erp,Type::Antex,Type::SinexCrd,Type::Brdc};
+    case PreciseBundlePlan::UpdPppAr:
+        return {Type::Sp3,Type::Clk,Type::Dcb,Type::Antex,Type::Brdc,Type::Upd};
     case PreciseBundlePlan::StandardPpp:
     case PreciseBundlePlan::AutoStandardPpp:
-        return {PreciseBundleProductType::Sp3, PreciseBundleProductType::Clk,
-                PreciseBundleProductType::Erp, PreciseBundleProductType::Antex};
-    case PreciseBundlePlan::UpdPppAr:
-        return {PreciseBundleProductType::Sp3, PreciseBundleProductType::Clk,
-                PreciseBundleProductType::Upd, PreciseBundleProductType::Erp,
-                PreciseBundleProductType::Antex};
-    case PreciseBundlePlan::OsbPppAr:
-    case PreciseBundlePlan::NetworkRtkPppRtk:
-        return {PreciseBundleProductType::Sp3, PreciseBundleProductType::Clk,
-                PreciseBundleProductType::Osb, PreciseBundleProductType::Erp,
-                PreciseBundleProductType::Antex};
+        required.insert(required.end(), {Type::Erp, Type::Antex});
+        break;
     }
-    return {};
+    // Geodetic and atmospheric auxiliaries have their own authoritative
+    // providers; they do not inherit the orbit/clock analysis-centre filter.
+    required.insert(required.end(), {Type::SinexCrd, Type::SinexSol, Type::Gim,
+        Type::Vmf1H00, Type::Vmf1H06, Type::Vmf1H12, Type::Vmf1H18,
+        Type::Vmf3H00, Type::Vmf3H06, Type::Vmf3H12, Type::Vmf3H18, Type::Brdc});
+    return required;
+}
+
+std::vector<PreciseBundleProductType> OptionalBundleProductTypes(
+    const PreciseBundlePlan plan) {
+    return plan == PreciseBundlePlan::NetworkRtkPppRtk
+        ? std::vector{PreciseBundleProductType::Att}
+        : std::vector<PreciseBundleProductType>{};
+}
+
+std::string NormalizeBundleFileName(const std::string& value) {
+    auto name=value.substr(value.find_last_of("/\\") == std::string::npos ? 0 : value.find_last_of("/\\")+1);
+    std::transform(name.begin(),name.end(),name.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+    for (const auto suffix : {".gz", ".bz2", ".z"})
+        if (name.ends_with(suffix)) {name.resize(name.size()-std::char_traits<char>::length(suffix));break;}
+    return name;
+}
+
+static PreciseBundlePlanResult PlanFixedUpd(const PreciseBundleRequest& request,
+    const PreciseBundleCatalog& catalog) {
+    using Type=PreciseBundleProductType;
+    PreciseBundlePlanResult result;result.plan=request.plan;result.strictMatching=true;
+    const auto dates=Enumerate(request.startDate,request.endDate);
+    result.expectedDays=static_cast<int>(dates.size());
+    if(dates.empty()){result.error="Invalid or empty date range";return result;}
+    result.valid=true;result.familyKey="UPD_PPP_AR";
+    const auto required=RequiredBundleProductTypes(request.plan);
+    std::set<std::string> manifestKeys;
+    for(const auto& date:dates){
+        PreciseBundleDateStatus day;day.date=date;
+        const auto add=[&](const PreciseBundleProduct& p,bool selected=true){
+            day.members.push_back({date,p.type,p.logicalKey,p.fileName,p.routes,
+                MakeBundleCompatibilityKey(p),p.interval,selected});
+            result.routesDeferred=result.routesDeferred||p.routesDeferred;
+        };
+        for(const auto type:required){
+            if(type==Type::Upd){
+                bool downloadable=false;
+                for(const auto& p:catalog.products){
+                    if(p.type!=type||DateCode(p.nominalDate)!=DateCode(date))continue;
+                    add(p,!p.flagged);
+                    if(p.flagged)++result.flaggedUpdCount;
+                    downloadable=downloadable||(!p.flagged&&!p.inventoryOnly&&!p.routes.empty());
+                }
+                if(!downloadable||ListedUnavailable(catalog,type,date))day.missing.push_back(type);
+                continue;
+            }
+            const PreciseBundleProduct* selected=nullptr;
+            for(const auto& p:catalog.products){
+                if(p.type!=type||!Covers(p,date)||ListedUnavailable(catalog,type,date)
+                    ||(p.routes.empty()&&!p.routesDeferred))continue;
+                const bool matches=type==Type::Sp3 ? p.displayId==UpdPppArPreset::Orbit
+                    :type==Type::Clk ? p.displayId==UpdPppArPreset::Clock
+                    :type==Type::Dcb ? !UpdPppArPreset::DcbForYear(date.year).empty()
+                        &&p.displayId==UpdPppArPreset::DcbForYear(date.year)
+                    :type==Type::Antex ? p.displayId==UpdPppArPreset::Antex
+                    :type==Type::Brdc && MatchesCommonSupplement(p);
+                if(!matches)continue;
+                if((type==Type::Sp3||type==Type::Clk)&&!MatchesRequest(p,request))continue;
+                if(!selected||PreferCandidate(p,MakeBundleCompatibilityKey(p),*selected,
+                    MakeBundleCompatibilityKey(*selected),request))selected=&p;
+            }
+            if(selected)add(*selected);else day.missing.push_back(type);
+        }
+        day.complete=day.missing.empty();
+        if(day.complete){
+            ++result.completeDays;
+            for(const auto& member:day.members){
+                if(!member.selectedByDefault)continue;
+                const auto key=std::to_string(static_cast<int>(member.type))+"|"+member.logicalKey+"|"+member.fileName;
+                if(manifestKeys.insert(key).second)result.manifest.push_back(member);
+            }
+        }else{
+            result.missingDates.push_back(date);
+            for(const auto type:day.missing)
+                if(std::ranges::find(result.missingProductTypes,type)==result.missingProductTypes.end())
+                    result.missingProductTypes.push_back(type);
+        }
+        result.dates.push_back(std::move(day));
+    }
+    result.complete=result.completeDays==result.expectedDays;
+    return result;
 }
 
 PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
                                           const PreciseBundleCatalog& catalog) {
+    if(request.plan==PreciseBundlePlan::UpdPppAr)return PlanFixedUpd(request,catalog);
     PreciseBundlePlanResult result;
     result.plan = request.plan;
     result.strictMatching = request.strictMatching;
@@ -705,6 +836,10 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
         return result;
     }
     const auto required = RequiredBundleProductTypes(request.plan);
+    const auto optional = OptionalBundleProductTypes(request.plan);
+    auto requestedTypes = required;
+    requestedTypes.insert(requestedTypes.end(), optional.begin(), optional.end());
+    const bool automaticRtk = request.plan == PreciseBundlePlan::NetworkRtkPppRtk;
 
     // Build a date/type index once.  The previous planner scanned every
     // catalog row for every (anchor, date, required-type) combination.  That
@@ -753,9 +888,40 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
         }
         anchors.push_back(&p);
     }
-    if (anchors.empty()) {
-        result.error = "No SP3 candidates satisfy the requested filters";
-        return result;
+    const bool hasOrbitAnchor = !anchors.empty();
+    PreciseBundleProduct requestedIdentity;
+    if (!hasOrbitAnchor) {
+        // A missing orbit must not hide available companion files. Use an
+        // identified remaining stream to keep their producer family coherent;
+        // the orbit stays missing and no complete bundle can be produced.
+        auto identityRequest = request;
+        identityRequest.orbitInterval.clear();
+        for (const auto type : {PreciseBundleProductType::Clk,
+                PreciseBundleProductType::Osb, PreciseBundleProductType::Att,
+                PreciseBundleProductType::Upd}) {
+            for (const auto& product : catalog.products) {
+                if (product.type != type || !MatchesRequest(product, request)) continue;
+                if (AnchorMetadataCompleteForRequest(
+                        MakeBundleCompatibilityKey(product), identityRequest)) {
+                    anchors.push_back(&product);
+                }
+            }
+            if (!anchors.empty()) break;
+        }
+        if (anchors.empty()) {
+            // An explicit preset still identifies its requested family even
+            // when no core files exist. This identity has no file or route
+            // and is never added to the catalogue or download manifest.
+            requestedIdentity.center = request.center;
+            requestedIdentity.series = request.series;
+            requestedIdentity.productLine = request.productLine;
+            requestedIdentity.constellation = request.systems;
+            if (request.latency == PreciseBundleLatency::Final)
+                requestedIdentity.latency = "FINAL";
+            else if (request.latency == PreciseBundleLatency::Rapid)
+                requestedIdentity.latency = "RAPID";
+            anchors.push_back(&requestedIdentity);
+        }
     }
 
     // Evaluate each distinct SP3 family and retain the one with the greatest
@@ -763,6 +929,7 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
     // Final/Rapid selection while still reporting every missing date.
     std::set<std::string> seen;
     int bestComplete = -1;
+    int bestVerifiedCoreDays = -1, bestCoreDays = -1, bestCoreMembers = -1;
     bool bestHasUnknownCritical = true;
     int bestLatencyPreference = 99;
     long long bestClockPreference = LLONG_MAX;
@@ -778,7 +945,12 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
         for (const auto& date : dates) {
             PreciseBundleDateStatus status;
             status.date = date;
-            for (const auto type : required) {
+            for (const auto type : requestedTypes) {
+                const bool mandatory = std::ranges::find(required, type) != required.end();
+                if (!hasOrbitAnchor && type == PreciseBundleProductType::Sp3) {
+                    status.missing.push_back(type);
+                    continue;
+                }
                 const PreciseBundleProduct* selected = nullptr;
                 PreciseBundleCompatibilityKey selectedKey;
                 const auto typeIt = candidatesByType.find(
@@ -792,9 +964,27 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
                 }
                 if (ListedUnavailable(catalog, type, date)
                     || dateCandidates == nullptr) {
-                    status.missing.push_back(type);
+                    if (mandatory) status.missing.push_back(type);
                     continue;
                 }
+                const auto clockBiasQuality = [&](const PreciseBundleCompatibilityKey& clockKey) {
+                    int quality = 0;
+                    const auto biases = candidatesByType.find(static_cast<int>(PreciseBundleProductType::Osb));
+                    if (biases == candidatesByType.end()
+                        || ListedUnavailable(catalog, PreciseBundleProductType::Osb, date)) return quality;
+                    const auto day = biases->second.find(DateCode(date));
+                    if (day == biases->second.end()) return quality;
+                    for (const auto* bias : day->second) {
+                        if (!bias || !MatchesRequest(*bias, request)
+                            || (!bias->routesDeferred && (bias->fileName.empty() || bias->routes.empty()))) continue;
+                        const auto key = MakeBundleCompatibilityKey(*bias);
+                        if (!BundleProductCompatibleWithAnchor(anchorKey, key, true)
+                            || !NonConstellationFieldsCompatible(clockKey, key)) continue;
+                        quality = std::max(quality, HasUnknownCriticalMetadata(
+                            bias->type, key, request) ? 1 : 2);
+                    }
+                    return quality;
+                };
                 for (const auto* candidate : *dateCandidates) {
                     if (candidate == nullptr
                         || (!candidate->routesDeferred
@@ -802,7 +992,16 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
                                 || candidate->routes.empty()))
                         || !MatchesRequest(*candidate, request)) continue;
                     const auto candidateKey = MakeBundleCompatibilityKey(*candidate);
-                    if (!IsWumSupplementType(candidate->type)
+                    if (automaticRtk && type == PreciseBundleProductType::Erp
+                        && RtkErpPreference(*candidate, anchorKey) == 2) continue;
+                    if (automaticRtk && !mandatory
+                        && HasUnknownCriticalMetadata(type, candidateKey, request)) continue;
+                    if (automaticRtk && (IsRtkCoreType(type) || type == PreciseBundleProductType::Att)
+                        && std::ranges::any_of(status.members, [&](const auto& member) {
+                            return IsRtkCoreType(member.type)
+                                && !NonConstellationFieldsCompatible(member.compatibility, candidateKey);
+                        })) continue;
+                    if (!IsCommonSupplementType(candidate->type)
                         && !BundleProductCompatibleWithAnchor(
                             anchorKey,
                             // iGMAS UPD ``frequency_combination`` values
@@ -821,15 +1020,27 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
                             request.strictMatching)) {
                         continue;
                     }
-                    if (selected == nullptr
-                        || PreferCandidate(*candidate, candidateKey,
-                            *selected, selectedKey, request)) {
-                        selected = candidate;
-                        selectedKey = candidateKey;
+                    bool preferred = selected == nullptr;
+                    if (selected) {
+                        preferred = PreferCandidate(*candidate, candidateKey, *selected, selectedKey, request);
+                        if (automaticRtk && type == PreciseBundleProductType::Clk) {
+                            const int candidateQuality = clockBiasQuality(candidateKey);
+                            const int selectedQuality = clockBiasQuality(selectedKey);
+                            if (candidateQuality != selectedQuality) preferred = candidateQuality > selectedQuality;
+                        } else if (automaticRtk && type == PreciseBundleProductType::Osb) {
+                            const bool unknown = HasUnknownCriticalMetadata(type, candidateKey, request);
+                            const bool selectedUnknown = HasUnknownCriticalMetadata(type, selectedKey, request);
+                            if (unknown != selectedUnknown) preferred = !unknown;
+                        } else if (automaticRtk && type == PreciseBundleProductType::Erp) {
+                            const int candidatePriority = RtkErpPreference(*candidate, anchorKey);
+                            const int selectedPriority = RtkErpPreference(*selected, anchorKey);
+                            if (candidatePriority != selectedPriority) preferred = candidatePriority < selectedPriority;
+                        }
                     }
+                    if (preferred) { selected = candidate; selectedKey = candidateKey; }
                 }
                 if (!selected) {
-                    status.missing.push_back(type);
+                    if (mandatory) status.missing.push_back(type);
                 } else {
                     status.members.push_back({date, type, selected->logicalKey,
                                               selected->fileName, selected->routes,
@@ -842,7 +1053,7 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
             if (status.complete) ++completeDays;
             statuses.push_back(std::move(status));
         }
-        const int latencyPreference = LatencyPreference(anchorKey.latency);
+        const int latencyPreference = LatencyPreference(anchorKey.latency, request.plan);
         long long clockPreference = 0;
         if (request.plan == PreciseBundlePlan::AutoStandardPpp) {
             for (const auto& status : statuses) {
@@ -872,7 +1083,7 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
         // can be verified before considering latency or lexical family names.
         // Otherwise a CODE OSB with an undeclared reference frequency can
         // hide a complete WUM family and leave the quick plan undownloadable.
-        const bool better = completeDays > bestComplete
+        const bool ordinaryBetter = completeDays > bestComplete
             || (completeDays == bestComplete
                 && ((bestHasUnknownCritical && !hasUnknownCritical)
                     || (bestHasUnknownCritical == hasUnknownCritical
@@ -881,7 +1092,25 @@ PreciseBundlePlanResult PlanPreciseBundle(const PreciseBundleRequest& request,
                                 && (clockPreference < bestClockPreference
                                     || (clockPreference == bestClockPreference
                                         && (bestFamily.empty() || family < bestFamily))))))));
+        int coreDays = 0, verifiedCoreDays = 0, coreMembers = 0;
+        if (automaticRtk) for (const auto& status : statuses) {
+            int members = 0; bool verified = true;
+            for (const auto& member : status.members) if (IsRtkCoreType(member.type)) {
+                ++members;
+                verified = verified && !HasUnknownCriticalMetadata(member.type, member.compatibility, request);
+            }
+            coreMembers += members;
+            if (members == 3) { ++coreDays; if (verified) ++verifiedCoreDays; }
+        }
+        const auto score = std::tuple{verifiedCoreDays, coreDays, completeDays,
+            coreMembers, !hasUnknownCritical, -latencyPreference, -clockPreference};
+        const auto bestScore = std::tuple{bestVerifiedCoreDays, bestCoreDays, bestComplete,
+            bestCoreMembers, !bestHasUnknownCritical, -bestLatencyPreference, -bestClockPreference};
+        const bool better = automaticRtk
+            ? score > bestScore || (score == bestScore && (bestFamily.empty() || family < bestFamily))
+            : ordinaryBetter;
         if (better) {
+            bestVerifiedCoreDays = verifiedCoreDays; bestCoreDays = coreDays; bestCoreMembers = coreMembers;
             bestComplete = completeDays;
             bestHasUnknownCritical = hasUnknownCritical;
             bestLatencyPreference = latencyPreference;
@@ -1067,6 +1296,8 @@ std::string SerializePreciseBundleManifestJson(const PreciseBundlePlanResult& re
         << ",\"strictMatching\":" << (result.strictMatching ? "true" : "false")
         << ",\"expectedDays\":" << result.expectedDays
         << ",\"completeDays\":" << result.completeDays
+        << ",\"auxiliaryCompleteDays\":" << result.auxiliaryCompleteDays
+        << ",\"flaggedUpdRecords\":" << result.flaggedUpdCount
         << ",\"familyKey\":\"" << JsonEscape(result.familyKey)
         << "\",\"center\":\"" << JsonEscape(result.center)
         << "\",\"series\":\"" << JsonEscape(result.series)
@@ -1162,13 +1393,13 @@ std::string SerializePreciseBundleManifestCsv(const PreciseBundlePlanResult& res
 const char* PreciseBundlePlanName(const PreciseBundlePlan plan) {
     switch (plan) {
     case PreciseBundlePlan::WumPridePppAr:
-        return "PRIDE PPP-AR";
+        return "PRIDE PPP-AR(OSB)";
     case PreciseBundlePlan::StandardPpp: return "Standard PPP";
-    case PreciseBundlePlan::AutoStandardPpp: return "Automatic standard PPP";
-    case PreciseBundlePlan::UpdPppAr: return "UPD PPP-AR";
+    case PreciseBundlePlan::AutoStandardPpp: return "PPP: Automatic Product Matching";
+    case PreciseBundlePlan::UpdPppAr: return "GREAT PPP-AR(UPD)";
     case PreciseBundlePlan::OsbPppAr: return "OSB PPP-AR (same agency)";
     case PreciseBundlePlan::NetworkRtkPppRtk:
-        return "PPP-RTK / Network RTK common products";
+        return "PPP-RTK: Automatic Product Matching";
     }
     return "Unknown";
 }
@@ -1194,6 +1425,8 @@ const char* PreciseBundleProductTypeName(const PreciseBundleProductType type) {
     case PreciseBundleProductType::Vmf3H12: return "VMF3 12 UTC";
     case PreciseBundleProductType::Vmf3H18: return "VMF3 18 UTC";
     case PreciseBundleProductType::Brdc: return "IGS daily BRDC";
+    case PreciseBundleProductType::Dcb: return "DCB";
+    case PreciseBundleProductType::SinexReference: return "UPD reference SINEX";
     }
     return "Unknown";
 }

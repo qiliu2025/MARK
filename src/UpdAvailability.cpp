@@ -13,6 +13,7 @@
 #include <sqlite3.h>
 #include <string_view>
 #include <set>
+#include <map>
 
 namespace {
 
@@ -182,11 +183,47 @@ void ReadFiles(sqlite3* database, const std::string& /*where*/,
         record.constellation = ColumnWide(statement.get(), 5);
         record.interval = ColumnWide(statement.get(), 6);
         const auto fileName = ColumnWide(statement.get(), 7);
+        record.fileName = fileName;
         const auto url = ColumnWide(statement.get(), 8);
         record.provider = ColumnWide(statement.get(), 9);
         record.format = ColumnWide(statement.get(), 10);
         if (!url.empty()) record.routes.push_back({record.provider, url, fileName});
         destination.push_back(std::move(record));
+    }
+    if (!TableExists(database, "upd_references") || !TableExists(database, "reference_products")) return;
+    std::map<std::wstring, UpdProductRecord*> byKey;
+    for (auto& record : destination) byKey.emplace(record.logicalKey, &record);
+    const char* references =
+        "SELECT r.upd_logical_key,r.reference_type,r.reference_key,r.declared_file_name,"
+        "p.nominal_date,p.center,p.series,p.project,p.solution,p.sample_interval,"
+        "q.source_id,q.file_name,q.download_url,q.logical_key FROM upd_references r "
+        "JOIN upd_files u ON u.logical_key=r.upd_logical_key "
+        "LEFT JOIN reference_products p ON p.reference_key=r.reference_key "
+        "LEFT JOIN reference_routes q ON q.reference_key=r.reference_key "
+        "WHERE u.nominal_date>=?1 AND u.nominal_date<=?2 "
+        "ORDER BY r.upd_logical_key,r.reference_type,r.reference_key;";
+    StatementPtr refs;
+    if (!Prepare(database, references, refs, error)
+        || !BindText(refs.get(), 1, firstDate) || !BindText(refs.get(), 2, lastDate)) return;
+    while (sqlite3_step(refs.get()) == SQLITE_ROW) {
+        const auto found = byKey.find(ColumnWide(refs.get(), 0));
+        if (found == byKey.end()) continue;
+        auto& record = *found->second;
+        const auto key = ColumnWide(refs.get(), 2);
+        auto ref = std::ranges::find(record.references, key, &UpdReferenceProduct::key);
+        if (ref == record.references.end()) {
+            UpdReferenceProduct value;
+            value.type=ColumnWide(refs.get(),1);value.key=key;value.fileName=ColumnWide(refs.get(),3);
+            value.nominalDate=ParseDate(reinterpret_cast<const char*>(sqlite3_column_text(refs.get(),4)));
+            value.center=ColumnWide(refs.get(),5);value.series=ColumnWide(refs.get(),6);
+            value.project=ColumnWide(refs.get(),7);value.solution=ColumnWide(refs.get(),8);value.interval=ColumnWide(refs.get(),9);
+            record.references.push_back(std::move(value));ref=std::prev(record.references.end());
+        }
+        if (ref->type==L"DCB" && ref->nominalDate.year>0
+            && DateText(ref->nominalDate)!=DateText(record.nominalDate)) record.dcbDateMismatch=true;
+        const auto url=ColumnWide(refs.get(),12);
+        if(ref->logicalKey.empty())ref->logicalKey=ColumnWide(refs.get(),13);
+        if (!url.empty()) ref->routes.push_back({ColumnWide(refs.get(),10),url,ColumnWide(refs.get(),11)});
     }
 }
 
