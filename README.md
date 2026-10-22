@@ -2,7 +2,7 @@
 
 **Metadata-Guided Automation of Resource Workflows**
 
-MARK is a publicly available, locally deployable software system for organizing and using historical Global Navigation Satellite System (GNSS) observations and precise products. It brings file-availability records, time-dependent station metadata, and product-series information from distributed archives into searchable knowledge bases. Configurable rules then enable researchers to identify observations and precise products that meet study-specific requirements and prepare their automated acquisition.
+MARK is a publicly available, locally deployable software system for organizing and using historical Global Navigation Satellite System (GNSS) observations and precise products. It brings file-availability records, time-dependent station metadata, and product series information from distributed archives into searchable knowledge bases. Configurable rules then enable researchers to identify observations and precise products that meet study-specific requirements and prepare their automated acquisition.
 
 [![Download MARK for Windows](docs/images/download-windows.svg)](https://github.com/qiliu2025/MARK/releases/download/v1.0.0/MARK-v1.0.0-Windows-x64.exe)
 
